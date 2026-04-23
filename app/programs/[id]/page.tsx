@@ -86,9 +86,25 @@ export default async function ProgramDetailPage({ params }: Props) {
                     <p className="text-muted-foreground mt-1 text-xs">
                       システム管理の Inbox です。名前の変更や削除はできません。
                     </p>
+                    <p className="mt-2">
+                      <Link
+                        href="/inbox"
+                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                      >
+                        Inbox 画面でタスクを見る
+                      </Link>
+                    </p>
                   </div>
                 ) : (
                   <>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Link
+                        href={`/projects/${proj.id}`}
+                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                      >
+                        タスク一覧
+                      </Link>
+                    </div>
                     <form action={updateProject.bind(null, proj.id)} className="flex flex-wrap items-end gap-2">
                       <div className="min-w-0 flex-1">
                         <label htmlFor={`proj-name-${proj.id}`} className="sr-only">

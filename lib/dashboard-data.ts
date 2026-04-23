@@ -82,7 +82,9 @@ export async function getWorkloadForUser(
 
 export type WorkloadViewBucket = Awaited<
   ReturnType<typeof getWorkloadForUser>
->["buckets"][number] & { tasks: { id: string; title: string; dueOn: string | null }[] };
+>["buckets"][number] & {
+  tasks: { id: string; title: string; dueOn: string | null; projectId: string }[];
+};
 
 /** 週次負荷画面用: 件数＋週内タスクの抜粋 */
 export async function getWorkloadViewForUser(
@@ -91,14 +93,17 @@ export async function getWorkloadViewForUser(
 ) {
   const w = await getWorkloadForUser(userId, timeZone);
   const allIds = w.buckets.flatMap((b) => b.taskIds);
-  let tasksById: Record<string, { id: string; title: string; dueOn: string | null }> =
-    {};
+  let tasksById: Record<
+    string,
+    { id: string; title: string; dueOn: string | null; projectId: string }
+  > = {};
   if (allIds.length > 0) {
     const rows = await db
       .select({
         id: tasks.id,
         title: tasks.title,
         dueOn: tasks.dueOn,
+        projectId: tasks.projectId,
       })
       .from(tasks)
       .where(inArray(tasks.id, allIds));
@@ -106,14 +111,29 @@ export async function getWorkloadViewForUser(
   }
   const buckets: WorkloadViewBucket[] = w.buckets.map((b) => ({
     ...b,
-    tasks: b.taskIds.map((id) => {
-      const t = tasksById[id];
-      return {
-        id,
-        title: t?.title ?? "（表示できません）",
-        dueOn: t?.dueOn ?? null,
-      };
-    }),
+    tasks: b
+      .taskIds.map((id) => {
+        const t = tasksById[id];
+        return {
+          id,
+          title: t?.title ?? "（表示できません）",
+          dueOn: t?.dueOn ?? null,
+          projectId: t?.projectId ?? "",
+        };
+      })
+      .sort((a, b) => {
+        if (!a.dueOn && !b.dueOn) {
+          return a.title.localeCompare(b.title, "ja");
+        }
+        if (!a.dueOn) {
+          return 1;
+        }
+        if (!b.dueOn) {
+          return -1;
+        }
+        const c = a.dueOn.localeCompare(b.dueOn);
+        return c !== 0 ? c : a.title.localeCompare(b.title, "ja");
+      }),
   }));
   return { ...w, buckets };
 }

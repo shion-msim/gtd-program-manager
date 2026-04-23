@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getDefaultTimeZone, getWorkloadViewForUser } from "@/lib/dashboard-data";
 import { addDaysYmd } from "@/lib/calendar-buckets";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 function weekLabel(weekStartYmd: string) {
@@ -63,7 +64,16 @@ export default async function WorkloadPage() {
                   <ul className="text-foreground/90 list-inside list-disc text-sm">
                     {b.tasks.slice(0, 8).map((t) => (
                       <li key={t.id}>
-                        {t.title}
+                        {t.projectId ? (
+                          <Link
+                            href={`/projects/${t.projectId}#task-${t.id}`}
+                            className="underline underline-offset-4"
+                          >
+                            {t.title}
+                          </Link>
+                        ) : (
+                          t.title
+                        )}
                         {t.dueOn ? (
                           <span className="text-muted-foreground">
                             {" "}
