@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 async function projectForUser(projectId: string, userId: string) {
   const [row] = await db
@@ -45,6 +46,7 @@ export async function createProject(programId: string, formData: FormData) {
   revalidatePath("/programs");
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
+  revalidateAppShell();
   redirect(`/programs/${programId}?toast=created`);
 }
 
@@ -73,6 +75,7 @@ export async function updateProject(projectId: string, formData: FormData) {
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
+  revalidateAppShell();
   redirect(`/programs/${programId}?toast=saved`);
 }
 
@@ -93,5 +96,6 @@ export async function deleteProject(projectId: string, formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  revalidateAppShell();
   redirect("/programs?toast=deleted");
 }

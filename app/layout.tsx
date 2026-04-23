@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SiteHeader } from "@/components/site-header";
+import { MainChrome } from "@/components/main-chrome";
 import { SearchParamsToast } from "@/components/search-params-toast";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -40,8 +40,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SiteHeader />
-          <div className="flex-1">{children}</div>
+          <MainChrome>{children}</MainChrome>
           <Suspense fallback={null}>
             <SearchParamsToast />
           </Suspense>

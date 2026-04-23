@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ensureInboxForUser } from "@/lib/inbox";
 import {
   getInboxOpenTasksForUser,
   getNonInboxProjectsForUser,
@@ -18,6 +19,7 @@ export default async function InboxPage() {
     redirect("/login");
   }
   const userId = session.user.id;
+  await ensureInboxForUser(userId);
   const [{ projectId, rows }, moveTargets] = await Promise.all([
     getInboxOpenTasksForUser(userId),
     getNonInboxProjectsForUser(userId),
@@ -34,7 +36,7 @@ export default async function InboxPage() {
 
       {!projectId ? (
         <p className="text-muted-foreground text-sm">
-          Inbox プロジェクトがまだありません。再ログインで作成されるはずです。
+          Inbox プロジェクトを用意できませんでした。データベース接続を確認するか、しばらくしてから再度お試しください。
         </p>
       ) : (
         <>

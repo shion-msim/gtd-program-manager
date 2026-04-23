@@ -6,6 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 function parseOptionalDate(raw: FormDataEntryValue | null): string | null {
   if (raw === null || raw === undefined) {
@@ -37,6 +38,7 @@ export async function createProgram(formData: FormData) {
     endOn,
   });
   revalidatePath("/programs");
+  revalidateAppShell();
   redirect("/programs?toast=created");
 }
 
@@ -72,6 +74,7 @@ export async function updateProgram(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
   revalidatePath(`/programs/${programId}`);
+  revalidateAppShell();
   redirect("/programs?toast=saved");
 }
 
@@ -101,5 +104,6 @@ export async function deleteProgram(programId: string, formData: FormData) {
     .delete(programs)
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
+  revalidateAppShell();
   redirect("/programs?toast=deleted");
 }

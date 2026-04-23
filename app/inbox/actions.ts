@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 import { getInboxProjectId } from "@/lib/inbox";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 import { isTaskStatus } from "@/lib/task-constants";
 
 function revalidateInboxRelated(taskId?: string) {
@@ -16,6 +17,7 @@ function revalidateInboxRelated(taskId?: string) {
   if (taskId) {
     revalidatePath(`/inbox/tasks/${taskId}/edit`);
   }
+  revalidateAppShell();
 }
 
 async function taskInUserInbox(userId: string, taskId: string) {

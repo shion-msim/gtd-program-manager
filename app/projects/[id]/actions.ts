@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 import { isTaskStatus } from "@/lib/task-constants";
 
 function revalidateTaskSurfaces(
@@ -22,6 +23,7 @@ function revalidateTaskSurfaces(
   if (taskId) {
     revalidatePath(`/projects/${projectId}/tasks/${taskId}/edit`);
   }
+  revalidateAppShell();
 }
 
 async function nonInboxProjectForUser(projectId: string, userId: string) {

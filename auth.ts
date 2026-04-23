@@ -12,7 +12,7 @@ import {
   verificationTokensTable,
 } from "@/db/schema";
 import { ensureE2eUser } from "@/lib/e2e-user";
-import { createInboxForNewUser } from "@/lib/inbox";
+import { ensureInboxForUser } from "@/lib/inbox";
 
 const adapter = DrizzleAdapter(db, {
   usersTable,
@@ -57,10 +57,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return;
       }
       try {
-        await createInboxForNewUser(user.id);
+        await ensureInboxForUser(user.id);
       } catch (e) {
         console.error("Inbox 自動生成に失敗:", e);
         throw e;
+      }
+    },
+    /** 既存ユーザー（createUser 以前の登録・初回作成失敗など）も毎回冪等に補完する */
+    async signIn({ user }) {
+      if (!user.id) {
+        return;
+      }
+      try {
+        await ensureInboxForUser(user.id);
+      } catch (e) {
+        console.error("Inbox 確保に失敗:", e);
       }
     },
   },
