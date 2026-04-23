@@ -50,3 +50,16 @@ export async function ensureInboxForUser(userId: string) {
   }
   await createInboxForNewUser(userId);
 }
+
+export async function getInboxProjectId(
+  userId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(eq(projects.userId, userId), eq(projects.isInbox, true)),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
