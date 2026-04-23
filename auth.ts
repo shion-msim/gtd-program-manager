@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
@@ -10,6 +11,7 @@ import {
   usersTable,
   verificationTokensTable,
 } from "@/db/schema";
+import { ensureE2eUser } from "@/lib/e2e-user";
 import { createInboxForNewUser } from "@/lib/inbox";
 
 const adapter = DrizzleAdapter(db, {
@@ -20,11 +22,35 @@ const adapter = DrizzleAdapter(db, {
   authenticatorsTable,
 });
 
+const e2eCredentials =
+  process.env.E2E_AUTH_ENABLED === "1"
+    ? [
+        Credentials({
+          id: "e2e-credentials",
+          name: "E2E",
+          credentials: {
+            secret: { label: "E2E シークレット", type: "password" },
+          },
+          async authorize(credentials) {
+            const secret = credentials?.secret;
+            if (
+              typeof secret !== "string" ||
+              secret !== process.env.E2E_AUTH_SECRET
+            ) {
+              return null;
+            }
+            const u = await ensureE2eUser();
+            return { id: u.id, name: u.name, email: u.email };
+          },
+        }),
+      ]
+    : [];
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter,
   session: { strategy: "jwt" },
   trustHost: true,
-  providers: [Google],
+  providers: [Google, ...e2eCredentials],
   events: {
     async createUser({ user }) {
       if (!user.id) {

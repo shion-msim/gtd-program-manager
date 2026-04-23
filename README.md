@@ -26,7 +26,15 @@ Next.js 16（App Router）、TypeScript、Tailwind CSS、Drizzle ORM、Neon（Po
 ## 実装状況（要約）
 
 - プロジェクト雛形、Drizzle スキーマ（Auth ＋ `programs` / `projects` / `tasks`）、初回 Google 登録時の Inbox 生成、Auth.js＋ミドルウェア、shadcn＋ライト/ダーク切替、ログイン/ダッシュボードの導線まで対応。
-- 今後: `IMPLEMENTATION-SPEC.md` の Route Handlers、負荷ビュー、Playwright（`E2E-SCOPE.md`）を順に積み上げる。
+- Route Handlers（`docs/IMPLEMENTATION-SPEC.md`）は実装済み。
+- 負荷ビューは `/workload`、Inbox・プログラムは `/inbox`・`/programs`、ナビ（Inbox / ダッシュボード / 負荷 / プログラム）を付与。
+- E2E: `E2E_AUTH_ENABLED=1` と `E2E_AUTH_SECRET` を `.env.local` に入れたうえで `npm run test:e2e`（内容は `docs/E2E-SCOPE.md` の A〜E 相当、DB・`AUTH_SECRET` が無いとスイートをスキップ）。
+
+### E2E（Playwright）
+
+1. `.env.local` に `DATABASE_URL`・`AUTH_SECRET`、および `E2E_AUTH_ENABLED=1`・`E2E_AUTH_SECRET`（任意の十分長い文字列）を設定。
+2. `npx playwright install`（初回のみブラウザ取得）。
+3. `npm run test:e2e`
 
 ## Create Next App
 

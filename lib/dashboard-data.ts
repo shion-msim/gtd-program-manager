@@ -1,4 +1,15 @@
-import { and, count, desc, eq, gte, lte, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { programs, projects, tasks } from "@/db/schema";
 import {
@@ -67,6 +78,44 @@ export async function getWorkloadForUser(
     buckets: resultBuckets,
     withoutDueCount: w,
   };
+}
+
+export type WorkloadViewBucket = Awaited<
+  ReturnType<typeof getWorkloadForUser>
+>["buckets"][number] & { tasks: { id: string; title: string; dueOn: string | null }[] };
+
+/** 週次負荷画面用: 件数＋週内タスクの抜粋 */
+export async function getWorkloadViewForUser(
+  userId: string,
+  timeZone: string = DEFAULT_TZ,
+) {
+  const w = await getWorkloadForUser(userId, timeZone);
+  const allIds = w.buckets.flatMap((b) => b.taskIds);
+  let tasksById: Record<string, { id: string; title: string; dueOn: string | null }> =
+    {};
+  if (allIds.length > 0) {
+    const rows = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        dueOn: tasks.dueOn,
+      })
+      .from(tasks)
+      .where(inArray(tasks.id, allIds));
+    tasksById = Object.fromEntries(rows.map((r) => [r.id, r]));
+  }
+  const buckets: WorkloadViewBucket[] = w.buckets.map((b) => ({
+    ...b,
+    tasks: b.taskIds.map((id) => {
+      const t = tasksById[id];
+      return {
+        id,
+        title: t?.title ?? "（表示できません）",
+        dueOn: t?.dueOn ?? null,
+      };
+    }),
+  }));
+  return { ...w, buckets };
 }
 
 export async function getSummaryForUser(
