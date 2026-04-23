@@ -1,19 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 import { isTaskStatus } from "@/lib/task-constants";
 
-function revalidateTaskSurfaces(projectId: string, programId: string) {
+function revalidateTaskSurfaces(
+  projectId: string,
+  programId: string,
+  taskId?: string,
+) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  if (taskId) {
+    revalidatePath(`/projects/${projectId}/tasks/${taskId}/edit`);
+  }
 }
 
 async function nonInboxProjectForUser(projectId: string, userId: string) {
@@ -68,6 +76,7 @@ export async function addProjectTask(projectId: string, formData: FormData) {
     status: "next",
   });
   revalidateTaskSurfaces(projectId, proj.programId);
+  redirect(`/projects/${projectId}?toast=created`);
 }
 
 export async function updateProjectTask(
@@ -126,7 +135,8 @@ export async function updateProjectTask(
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(projectId, proj.programId);
+  revalidateTaskSurfaces(projectId, proj.programId, taskId);
+  redirect(`/projects/${projectId}?toast=saved`);
 }
 
 export async function moveProjectTask(
@@ -174,9 +184,10 @@ export async function moveProjectTask(
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(fromProjectId, fromProj.programId);
+  revalidateTaskSurfaces(fromProjectId, fromProj.programId, taskId);
   revalidatePath(`/projects/${target.id}`);
   revalidatePath(`/programs/${target.programId}`);
+  redirect(`/projects/${target.id}?toast=moved`);
 }
 
 export async function deleteProjectTask(
@@ -198,5 +209,6 @@ export async function deleteProjectTask(
     return;
   }
   await db.delete(tasks).where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(projectId, proj.programId);
+  revalidateTaskSurfaces(projectId, proj.programId, taskId);
+  redirect(`/projects/${projectId}?toast=deleted`);
 }

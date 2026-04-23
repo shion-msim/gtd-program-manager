@@ -1,35 +1,16 @@
 import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   getInboxOpenTasksForUser,
   getNonInboxProjectsForUser,
 } from "@/lib/inbox-tasks";
-import { TASK_STATUSES } from "@/lib/task-constants";
+import { taskStatusLabel } from "@/lib/task-constants";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  addInboxTask,
-  completeInboxTask,
-  moveInboxTaskToProject,
-  updateInboxTask,
-} from "./actions";
-
-const inputClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
-
-const textareaClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[4.5rem] w-full min-w-0 rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
-
-const selectClass = inputClass;
-
-const INBOX_EDITABLE_STATUSES = TASK_STATUSES.filter((s) => s !== "done");
-
-function dueForInput(v: string | null | undefined): string {
-  if (!v) {
-    return "";
-  }
-  return v.slice(0, 10);
-}
+import { addInboxTask, completeInboxTask, moveInboxTaskToProject } from "./actions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export default async function InboxPage() {
   const session = await auth();
@@ -43,11 +24,11 @@ export default async function InboxPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header>
-        <h1 className="text-xl font-semibold">Inbox</h1>
+        <h1 className="text-xl font-semibold">受信箱（Inbox）</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          受信箱（未整理）のタスク。会議中の即メモはここに置きます。
+          未整理のタスク。会議中の即メモはここに置きます。編集は各行の「編集」から開きます。
         </p>
       </header>
 
@@ -62,13 +43,12 @@ export default async function InboxPage() {
               <label htmlFor="inbox-title" className="sr-only">
                 タスク
               </label>
-              <input
+              <Input
                 id="inbox-title"
                 name="title"
                 type="text"
                 required
                 placeholder="1 行でタスクを追加"
-                className={inputClass}
               />
             </div>
             <Button type="submit" size="sm">
@@ -85,149 +65,64 @@ export default async function InboxPage() {
               {rows.map((t) => (
                 <li
                   key={t.id}
-                  className="px-3 py-2.5 text-sm"
+                  className="flex flex-col gap-3 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                   data-task-title={t.title}
                 >
-                  <details>
-                    <summary className="cursor-pointer list-inside list-disc font-medium marker:text-muted-foreground">
-                      {t.title}
-                    </summary>
-                    <div className="border-border mt-3 space-y-4 border-t pt-3">
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-medium">{t.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {taskStatusLabel(t.status)}
+                      {t.dueOn ? ` · 〆 ${t.dueOn}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/inbox/tasks/${t.id}/edit`}
+                      className={cn(
+                        buttonVariants({ variant: "secondary", size: "sm" }),
+                      )}
+                    >
+                      編集
+                    </Link>
+                    {moveTargets.length > 0 ? (
                       <form
-                        action={updateInboxTask.bind(null, t.id)}
-                        className="space-y-2"
+                        action={moveInboxTaskToProject.bind(null, t.id)}
+                        className="flex flex-wrap items-end gap-2"
                       >
-                        <div>
-                          <label
-                            htmlFor={`title-${t.id}`}
-                            className="text-muted-foreground mb-1 block text-xs"
-                          >
-                            タイトル
+                        <div className="min-w-[12rem] flex-1">
+                          <label htmlFor={`move-${t.id}`} className="sr-only">
+                            移動先プロジェクト
                           </label>
-                          <input
-                            id={`title-${t.id}`}
-                            name="title"
-                            type="text"
+                          <NativeSelect
+                            id={`move-${t.id}`}
+                            name="targetProjectId"
                             required
-                            defaultValue={t.title}
-                            className={inputClass}
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`note-${t.id}`}
-                            className="text-muted-foreground mb-1 block text-xs"
+                            data-testid="inbox-move-target"
+                            defaultValue=""
                           >
-                            メモ
-                          </label>
-                          <textarea
-                            id={`note-${t.id}`}
-                            name="note"
-                            rows={3}
-                            defaultValue={t.note ?? ""}
-                            className={textareaClass}
-                          />
+                            <option value="">移動先を選択…</option>
+                            {moveTargets.map((m) => (
+                              <option key={m.projectId} value={m.projectId}>
+                                {m.programName} / {m.projectName}
+                              </option>
+                            ))}
+                          </NativeSelect>
                         </div>
-                        <div className="flex flex-wrap gap-3">
-                          <div className="min-w-[10rem] flex-1">
-                            <label
-                              htmlFor={`due-${t.id}`}
-                              className="text-muted-foreground mb-1 block text-xs"
-                            >
-                              〆切
-                            </label>
-                            <input
-                              id={`due-${t.id}`}
-                              name="dueOn"
-                              type="date"
-                              defaultValue={dueForInput(t.dueOn ?? undefined)}
-                              className={inputClass}
-                            />
-                          </div>
-                          <div className="min-w-[10rem] flex-1">
-                            <label
-                              htmlFor={`status-${t.id}`}
-                              className="text-muted-foreground mb-1 block text-xs"
-                            >
-                              状態
-                            </label>
-                            <select
-                              id={`status-${t.id}`}
-                              name="status"
-                              required
-                              defaultValue={t.status}
-                              className={selectClass}
-                            >
-                              {INBOX_EDITABLE_STATUSES.map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <Button type="submit" size="sm" variant="secondary">
-                          変更を保存
+                        <Button
+                          type="submit"
+                          size="sm"
+                          data-testid="inbox-move-submit"
+                        >
+                          移動
                         </Button>
                       </form>
-
-                      <div className="space-y-2">
-                        <p className="text-muted-foreground text-xs font-medium">
-                          別プロジェクトへ移す
-                        </p>
-                        {moveTargets.length === 0 ? (
-                          <p className="text-muted-foreground text-xs">
-                            移動先がありません。
-                            <Link href="/programs" className="text-foreground underline">
-                              プログラム
-                            </Link>
-                            からプロジェクトを作成してください。
-                          </p>
-                        ) : (
-                          <form
-                            action={moveInboxTaskToProject.bind(null, t.id)}
-                            className="flex flex-wrap items-end gap-2"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <label
-                                htmlFor={`move-${t.id}`}
-                                className="sr-only"
-                              >
-                                移動先プロジェクト
-                              </label>
-                              <select
-                                id={`move-${t.id}`}
-                                name="targetProjectId"
-                                required
-                                className={selectClass}
-                                data-testid="inbox-move-target"
-                              >
-                                <option value="">選択…</option>
-                                {moveTargets.map((m) => (
-                                  <option key={m.projectId} value={m.projectId}>
-                                    {m.programName} / {m.projectName}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <Button
-                              type="submit"
-                              size="sm"
-                              data-testid="inbox-move-submit"
-                            >
-                              移動
-                            </Button>
-                          </form>
-                        )}
-                      </div>
-
-                      <form action={completeInboxTask.bind(null, t.id)}>
-                        <Button type="submit" size="sm" variant="outline">
-                          完了
-                        </Button>
-                      </form>
-                    </div>
-                  </details>
+                    ) : null}
+                    <form action={completeInboxTask.bind(null, t.id)}>
+                      <Button type="submit" size="sm" variant="outline">
+                        完了
+                      </Button>
+                    </form>
+                  </div>
                 </li>
               ))}
             </ul>

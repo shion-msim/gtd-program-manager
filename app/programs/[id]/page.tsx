@@ -1,14 +1,14 @@
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createProject, deleteProject, updateProject } from "./actions";
-
-const inputClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -36,7 +36,7 @@ export default async function ProgramDetailPage({ params }: Props) {
     .orderBy(asc(projects.name));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-6">
+    <div className="mx-auto max-w-3xl space-y-8 p-6">
       <header className="space-y-1">
         <p className="text-muted-foreground text-sm">
           <Link href="/programs" className="underline underline-offset-4">
@@ -54,16 +54,15 @@ export default async function ProgramDetailPage({ params }: Props) {
         <h2 className="text-sm font-medium">プロジェクトを追加</h2>
         <form action={createProject.bind(null, programId)} className="flex flex-wrap items-end gap-2">
           <div className="min-w-0 flex-1">
-            <label htmlFor="new-project-name" className="sr-only">
+            <Label htmlFor="new-project-name" className="sr-only">
               プロジェクト名
-            </label>
-            <input
+            </Label>
+            <Input
               id="new-project-name"
               name="name"
               type="text"
               required
               placeholder="プロジェクト名"
-              className={inputClass}
             />
           </div>
           <Button type="submit" size="sm">
@@ -91,7 +90,7 @@ export default async function ProgramDetailPage({ params }: Props) {
                         href="/inbox"
                         className="text-primary text-sm font-medium underline-offset-4 hover:underline"
                       >
-                        Inbox 画面でタスクを見る
+                        受信箱でタスクを見る
                       </Link>
                     </p>
                   </div>
@@ -107,27 +106,29 @@ export default async function ProgramDetailPage({ params }: Props) {
                     </div>
                     <form action={updateProject.bind(null, proj.id)} className="flex flex-wrap items-end gap-2">
                       <div className="min-w-0 flex-1">
-                        <label htmlFor={`proj-name-${proj.id}`} className="sr-only">
+                        <Label htmlFor={`proj-name-${proj.id}`} className="sr-only">
                           名前
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           id={`proj-name-${proj.id}`}
                           name="name"
                           type="text"
                           required
                           defaultValue={proj.name}
-                          className={inputClass}
                         />
                       </div>
                       <Button type="submit" size="sm" variant="secondary">
                         保存
                       </Button>
                     </form>
-                    <form action={deleteProject.bind(null, proj.id)}>
-                      <Button type="submit" size="sm" variant="outline">
-                        削除
-                      </Button>
-                    </form>
+                    <ConfirmDeleteForm
+                      action={deleteProject.bind(null, proj.id)}
+                      title="このプロジェクトを削除しますか？"
+                      description="配下のタスクもすべて削除されます。"
+                      triggerLabel="削除"
+                      confirmLabel="削除する"
+                      triggerVariant="destructive"
+                    />
                   </>
                 )}
               </li>

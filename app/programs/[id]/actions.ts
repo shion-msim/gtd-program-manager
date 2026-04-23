@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -44,6 +45,7 @@ export async function createProject(programId: string, formData: FormData) {
   revalidatePath("/programs");
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
+  redirect(`/programs/${programId}?toast=created`);
 }
 
 export async function updateProject(projectId: string, formData: FormData) {
@@ -67,9 +69,11 @@ export async function updateProject(projectId: string, formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
-  revalidatePath(`/programs/${existing.programId}`);
+  const programId = existing.programId;
+  revalidatePath(`/programs/${programId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
+  redirect(`/programs/${programId}?toast=saved`);
 }
 
 export async function deleteProject(projectId: string, formData: FormData) {
@@ -89,4 +93,5 @@ export async function deleteProject(projectId: string, formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  redirect("/programs?toast=deleted");
 }

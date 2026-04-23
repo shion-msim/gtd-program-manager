@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export default async function Home() {
   const session = await auth();
   return (
-    <main className="mx-auto flex min-h-svh max-w-2xl flex-col justify-center gap-8 p-6">
+    <main className="mx-auto flex min-h-svh max-w-3xl flex-col justify-center gap-8 p-6">
       <div className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight">
           GTD プログラム / プロジェクト マネージャー

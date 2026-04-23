@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -8,10 +9,13 @@ import { projects, tasks } from "@/db/schema";
 import { getInboxProjectId } from "@/lib/inbox";
 import { isTaskStatus } from "@/lib/task-constants";
 
-function revalidateInboxRelated() {
+function revalidateInboxRelated(taskId?: string) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  if (taskId) {
+    revalidatePath(`/inbox/tasks/${taskId}/edit`);
+  }
 }
 
 async function taskInUserInbox(userId: string, taskId: string) {
@@ -55,6 +59,7 @@ export async function addInboxTask(formData: FormData) {
     status: "inbox",
   });
   revalidateInboxRelated();
+  redirect("/inbox?toast=created");
 }
 
 export async function updateInboxTask(taskId: string, formData: FormData) {
@@ -108,7 +113,8 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+  redirect("/inbox?toast=saved");
 }
 
 export async function moveInboxTaskToProject(taskId: string, formData: FormData) {
@@ -147,7 +153,8 @@ export async function moveInboxTaskToProject(taskId: string, formData: FormData)
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+  redirect("/inbox?toast=moved");
 }
 
 export async function completeInboxTask(taskId: string, formData: FormData) {
@@ -167,5 +174,6 @@ export async function completeInboxTask(taskId: string, formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+  redirect("/inbox?toast=done");
 }

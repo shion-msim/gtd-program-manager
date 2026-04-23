@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -36,6 +37,7 @@ export async function createProgram(formData: FormData) {
     endOn,
   });
   revalidatePath("/programs");
+  redirect("/programs?toast=created");
 }
 
 export async function updateProgram(programId: string, formData: FormData) {
@@ -70,6 +72,7 @@ export async function updateProgram(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
   revalidatePath(`/programs/${programId}`);
+  redirect("/programs?toast=saved");
 }
 
 export async function deleteProgram(programId: string, formData: FormData) {
@@ -98,4 +101,5 @@ export async function deleteProgram(programId: string, formData: FormData) {
     .delete(programs)
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
+  redirect("/programs?toast=deleted");
 }

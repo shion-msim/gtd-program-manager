@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
+import { SearchParamsToast } from "@/components/search-params-toast";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +42,10 @@ export default function RootLayout({
         >
           <SiteHeader />
           <div className="flex-1">{children}</div>
+          <Suspense fallback={null}>
+            <SearchParamsToast />
+          </Suspense>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

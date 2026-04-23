@@ -1,14 +1,21 @@
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { programs } from "@/db/schema";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createProgram, deleteProgram, updateProgram } from "./actions";
-
-const inputClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
 
 function formatDateForInput(v: string | null | undefined): string {
   if (!v) {
@@ -29,7 +36,7 @@ export default async function ProgramsPage() {
     .orderBy(desc(programs.createdAt));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-6">
+    <div className="mx-auto max-w-3xl space-y-8 p-6">
       <header>
         <h1 className="text-xl font-semibold">プログラム</h1>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -37,132 +44,114 @@ export default async function ProgramsPage() {
         </p>
       </header>
 
-      <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-sm font-medium">新規プログラム</h2>
-        <form action={createProgram} className="space-y-3">
-          <div>
-            <label htmlFor="new-program-name" className="text-muted-foreground mb-1 block text-xs">
-              名前（必須）
-            </label>
-            <input
-              id="new-program-name"
-              name="name"
-              type="text"
-              required
-              className={inputClass}
-              placeholder="例: 2026 Q2 イニシアチブ"
-            />
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="min-w-[10rem] flex-1">
-              <label htmlFor="new-start" className="text-muted-foreground mb-1 block text-xs">
-                開始日
-              </label>
-              <input id="new-start" name="startOn" type="date" className={inputClass} />
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>新規プログラム</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={createProgram} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="new-program-name">名前（必須）</Label>
+              <Input
+                id="new-program-name"
+                name="name"
+                type="text"
+                required
+                placeholder="例: 2026 Q2 イニシアチブ"
+              />
             </div>
-            <div className="min-w-[10rem] flex-1">
-              <label htmlFor="new-end" className="text-muted-foreground mb-1 block text-xs">
-                終了日
-              </label>
-              <input id="new-end" name="endOn" type="date" className={inputClass} />
+            <div className="flex flex-wrap gap-3">
+              <div className="min-w-[10rem] flex-1 space-y-2">
+                <Label htmlFor="new-start">開始日</Label>
+                <Input id="new-start" name="startOn" type="date" />
+              </div>
+              <div className="min-w-[10rem] flex-1 space-y-2">
+                <Label htmlFor="new-end">終了日</Label>
+                <Input id="new-end" name="endOn" type="date" />
+              </div>
             </div>
-          </div>
-          <Button type="submit" size="sm">
-            作成
-          </Button>
-        </form>
-      </section>
+            <Button type="submit" size="sm">
+              作成
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {list.length === 0 ? (
         <p className="text-muted-foreground text-sm">プログラムはまだありません。</p>
       ) : (
         <ul className="space-y-4" data-testid="programs-list">
           {list.map((p) => (
-            <li
-              key={p.id}
-              className="divide-border space-y-3 rounded-lg border p-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-muted-foreground text-xs">
-                  {p.startOn ? p.startOn : "（開始日なし）"} 〜{" "}
-                  {p.endOn ? p.endOn : "（終了日なし）"}
-                </p>
-                <Link
-                  href={`/programs/${p.id}`}
-                  className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  プロジェクト
-                </Link>
-              </div>
-              <form action={updateProgram.bind(null, p.id)} className="space-y-3">
-                <div>
-                  <label
-                    htmlFor={`program-name-${p.id}`}
-                    className="text-muted-foreground mb-1 block text-xs"
-                  >
-                    名前
-                  </label>
-                  <input
-                    id={`program-name-${p.id}`}
-                    name="name"
-                    type="text"
-                    required
-                    defaultValue={p.name}
-                    className={inputClass}
+            <li key={p.id}>
+              <Card size="sm">
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 border-b pb-4">
+                  <div>
+                    <p className="text-muted-foreground text-xs">
+                      {p.startOn ? p.startOn : "（開始日なし）"} 〜{" "}
+                      {p.endOn ? p.endOn : "（終了日なし）"}
+                    </p>
+                    <Link
+                      href={`/programs/${p.id}`}
+                      className="text-primary mt-1 inline-block text-sm font-medium underline-offset-4 hover:underline"
+                    >
+                      プロジェクト一覧を開く
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-4">
+                  <form action={updateProgram.bind(null, p.id)} className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`program-name-${p.id}`}>名前</Label>
+                      <Input
+                        id={`program-name-${p.id}`}
+                        name="name"
+                        type="text"
+                        required
+                        defaultValue={p.name}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <div className="min-w-[10rem] flex-1 space-y-2">
+                        <Label htmlFor={`program-start-${p.id}`}>開始日</Label>
+                        <Input
+                          id={`program-start-${p.id}`}
+                          name="startOn"
+                          type="date"
+                          defaultValue={formatDateForInput(p.startOn ?? undefined)}
+                        />
+                      </div>
+                      <div className="min-w-[10rem] flex-1 space-y-2">
+                        <Label htmlFor={`program-end-${p.id}`}>終了日</Label>
+                        <Input
+                          id={`program-end-${p.id}`}
+                          name="endOn"
+                          type="date"
+                          defaultValue={formatDateForInput(p.endOn ?? undefined)}
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" size="sm" variant="secondary">
+                      保存
+                    </Button>
+                  </form>
+                </CardContent>
+                <CardFooter className="flex flex-col items-stretch gap-2 border-t">
+                  <p className="text-muted-foreground text-xs">
+                    配下にプロジェクトが 1 件もないときだけ削除できます（子があれば先に
+                    <Link href={`/programs/${p.id}`} className="underline">
+                      プロジェクト側
+                    </Link>
+                    で空にしてください）。
+                  </p>
+                  <ConfirmDeleteForm
+                    action={deleteProgram.bind(null, p.id)}
+                    title="このプログラムを削除しますか？"
+                    description="プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。"
+                    triggerLabel="削除を試みる"
+                    confirmLabel="削除する"
                   />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <div className="min-w-[10rem] flex-1">
-                    <label
-                      htmlFor={`program-start-${p.id}`}
-                      className="text-muted-foreground mb-1 block text-xs"
-                    >
-                      開始日
-                    </label>
-                    <input
-                      id={`program-start-${p.id}`}
-                      name="startOn"
-                      type="date"
-                      defaultValue={formatDateForInput(p.startOn ?? undefined)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div className="min-w-[10rem] flex-1">
-                    <label
-                      htmlFor={`program-end-${p.id}`}
-                      className="text-muted-foreground mb-1 block text-xs"
-                    >
-                      終了日
-                    </label>
-                    <input
-                      id={`program-end-${p.id}`}
-                      name="endOn"
-                      type="date"
-                      defaultValue={formatDateForInput(p.endOn ?? undefined)}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button type="submit" size="sm" variant="secondary">
-                    保存
-                  </Button>
-                </div>
-              </form>
-              <div className="border-border border-t pt-3">
-                <p className="text-muted-foreground mb-2 text-xs">
-                  配下にプロジェクトが 1 件もないときだけ削除できます（子があれば先に
-                  <Link href={`/programs/${p.id}`} className="underline">
-                    プロジェクト側
-                  </Link>
-                  で空にしてください）。
-                </p>
-                <form action={deleteProgram.bind(null, p.id)}>
-                  <Button type="submit" size="sm" variant="outline">
-                    削除を試みる
-                  </Button>
-                </form>
-              </div>
+                </CardFooter>
+              </Card>
             </li>
           ))}
         </ul>

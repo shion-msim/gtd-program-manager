@@ -95,7 +95,6 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
       .getByTestId("inbox-list")
       .locator("li")
       .filter({ hasText: title });
-    await row.locator("summary").click();
     await row.getByTestId("inbox-move-target").selectOption(project.id);
     await row.getByTestId("inbox-move-submit").click();
 

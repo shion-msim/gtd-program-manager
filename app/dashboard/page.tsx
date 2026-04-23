@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { getDefaultTimeZone, getSummaryForUser } from "@/lib/dashboard-data";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { signOutAction } from "./actions";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
@@ -15,14 +14,15 @@ export default async function DashboardPage() {
   const s = await getSummaryForUser(session.user.id, tz);
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-8 p-6">
+    <div className="mx-auto flex min-h-svh max-w-3xl flex-col gap-8 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">ダッシュボード</h1>
-        <form action={signOutAction}>
-          <Button type="submit" variant="outline" size="sm">
-            ログアウト
-          </Button>
-        </form>
+        <Link
+          href="/settings"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
+          設定
+        </Link>
       </header>
       <p className="text-muted-foreground text-sm" data-testid="dashboard-greeting">
         ようこそ、{session.user.name ?? session.user.email} さん。今日は{" "}
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
       </p>
 
       <section className="space-y-2 rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Inbox</h2>
+        <h2 className="text-sm font-medium">受信箱（Inbox）</h2>
         {s.inboxCount > 0 ? (
           <p>
             未整理が{" "}
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
           href="/inbox"
           className={cn(buttonVariants({ size: "sm", variant: "secondary" }))}
         >
-          Inbox へ
+          受信箱へ
         </Link>
       </section>
 
@@ -114,7 +114,14 @@ export default async function DashboardPage() {
         ) : (
           <ul className="list-inside list-disc text-sm">
             {s.activePrograms.map((p) => (
-              <li key={p.id}>{p.name}</li>
+              <li key={p.id}>
+                <Link
+                  href={`/programs/${p.id}`}
+                  className="underline underline-offset-4"
+                >
+                  {p.name}
+                </Link>
+              </li>
             ))}
           </ul>
         )}
