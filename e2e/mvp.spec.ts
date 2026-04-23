@@ -110,4 +110,31 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     ).toBeVisible();
     await expect(page.getByText("6 週の件数")).toBeVisible();
   });
+
+  test("G: プロジェクト画面でタスクを追加", async ({ page }) => {
+    await loginAsE2e(page);
+    const req = page.context().request;
+    const prog = await req.post("/api/programs", {
+      data: { name: `E2E Project Tasks ${Date.now()}` },
+    });
+    expect(prog.ok()).toBeTruthy();
+    const program = (await prog.json()) as { id: string };
+    const proj = await req.post("/api/projects", {
+      data: { programId: program.id, name: "E2E Task Board" },
+    });
+    expect(proj.ok()).toBeTruthy();
+    const project = (await proj.json()) as { id: string };
+
+    await page.goto(`/projects/${project.id}`);
+    await expect(
+      page.getByRole("heading", { name: "E2E Task Board", level: 1 }),
+    ).toBeVisible();
+
+    const label = `e2e-project-task-${Date.now()}`;
+    await page.getByPlaceholder("次の行動として追加").fill(label);
+    await page.getByRole("button", { name: "追加" }).nth(0).click();
+    await expect(
+      page.getByTestId("project-tasks-open").getByText(label, { exact: true }),
+    ).toBeVisible();
+  });
 });

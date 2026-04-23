@@ -58,7 +58,14 @@ export default async function DashboardPage() {
         ) : (
           <ul className="list-inside list-disc text-sm">
             {s.dueToday.map((t) => (
-              <li key={t.id}>{t.title}</li>
+              <li key={t.id}>
+                <Link
+                  href={`/projects/${t.projectId}#task-${t.id}`}
+                  className="underline underline-offset-4"
+                >
+                  {t.title}
+                </Link>
+              </li>
             ))}
           </ul>
         )}
@@ -71,7 +78,14 @@ export default async function DashboardPage() {
         ) : (
           <ul className="list-inside list-disc text-sm">
             {s.nextActions.map((t) => (
-              <li key={t.id}>{t.title}</li>
+              <li key={t.id}>
+                <Link
+                  href={`/projects/${t.projectId}#task-${t.id}`}
+                  className="underline underline-offset-4"
+                >
+                  {t.title}
+                </Link>
+              </li>
             ))}
           </ul>
         )}

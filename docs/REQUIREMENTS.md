@@ -11,6 +11,7 @@
 - 2026-04-24: 初版（v0.1）
 - 2026-04-24: v0.2 — カラースキーム切替・共通UIパーツ方針を追加。§13 を具体化。
 - 2026-04-24: v0.3 — 実装寄りの章を [IMPLEMENTATION-SPEC.md](./IMPLEMENTATION-SPEC.md) 等へ移設。技術選定・DB・認証を [ARCHITECTURE.md](./ARCHITECTURE.md) に記録。§14 の次のステップを消化。
+- 2026-04-24: §14 を MVP 第1弾完了と残タスク（運用・CI）の記述に更新。
 
 ---
 
@@ -279,14 +280,14 @@ Cloudflare も長期的なコスト・Edge 最適化では有力なので、**�
 | E2E 最小範囲               | [E2E-SCOPE.md](./E2E-SCOPE.md)                 |
 
 
-**次の作業（コード）**
+**MVP 第1弾（コード）の達成状況**
 
-1. **Next.js** プロジェクト作成（TypeScript、Tailwind、App Router）。
-2. **Drizzle + Neon** の接続、`schema.ts` を [ARCHITECTURE.md](./ARCHITECTURE.md) に合わせる。
-3. **Auth.js** + Google、初回 `createUser` で Inbox 生成。
-4. **shadcn/ui** 初期化、テーマ切替（§5）。
-5. Route Handlers で [IMPLEMENTATION-SPEC.md](./IMPLEMENTATION-SPEC.md) の API を段階実装。
-6. Playwright の雛形と [E2E-SCOPE.md](./E2E-SCOPE.md) の A〜D。
+上記 1〜6 に相当する作業はリポジトリで**完了**している（Next.js 16、Drizzle/Neon、Auth.js＋Google、Inbox 自動生成、shadcn/テーマ、IMPLEMENTATION-SPEC 準拠の Route Handlers、Playwright と [E2E-SCOPE.md](./E2E-SCOPE.md) の A〜F）。
+
+**残りやすい運用・拡張（参考）**
+
+- 本番では E2E 用 Credentials を**無効**のままにし、`E2E_AUTH_*` を設定しない。
+- （任意）CI で lint/build。E2E は DB とシークレットの用意ができてから別途。
 
 ---
 
