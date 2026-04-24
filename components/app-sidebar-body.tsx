@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3Icon,
   FolderKanbanIcon,
+  FoldersIcon,
   InboxIcon,
   LayoutDashboardIcon,
+  ListTodoIcon,
   SettingsIcon,
 } from "lucide-react";
 
@@ -31,12 +33,20 @@ const TOP_NAV: {
   { href: "/dashboard", label: "ダッシュボード", Icon: LayoutDashboardIcon },
   { href: "/workload", label: "負荷", testId: "nav-workload", Icon: BarChart3Icon },
   { href: "/programs", label: "プログラム一覧", Icon: FolderKanbanIcon },
+  { href: "/projects", label: "プロジェクト一覧", testId: "nav-projects", Icon: FoldersIcon },
+  { href: "/tasks", label: "タスク一覧", testId: "nav-tasks", Icon: ListTodoIcon },
   { href: "/settings", label: "設定", testId: "nav-settings", Icon: SettingsIcon },
 ];
 
 function isNavActive(href: string, pathname: string) {
   if (href === "/programs") {
     return pathname === "/programs" || pathname.startsWith("/programs/");
+  }
+  if (href === "/projects") {
+    return pathname === "/projects" || pathname.startsWith("/projects/");
+  }
+  if (href === "/tasks") {
+    return pathname === "/tasks" || pathname.startsWith("/tasks/");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

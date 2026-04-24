@@ -67,3 +67,15 @@ export async function getInboxProjectId(
     .limit(1);
   return row?.id ?? null;
 }
+
+/** Inbox プロジェクトが属するプログラム ID（受信箱用プログラムは常に子を持つため削除不可） */
+export async function getInboxProgramIdForUser(
+  userId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ programId: projects.programId })
+    .from(projects)
+    .where(and(eq(projects.userId, userId), eq(projects.isInbox, true)))
+    .limit(1);
+  return row?.programId ?? null;
+}

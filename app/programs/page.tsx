@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { programs } from "@/db/schema";
+import { getInboxProgramIdForUser } from "@/lib/inbox";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createProgram, deleteProgram, updateProgram } from "./actions";
@@ -29,11 +30,14 @@ export default async function ProgramsPage() {
   if (!session?.user?.id) {
     redirect("/login");
   }
-  const list = await db
-    .select()
-    .from(programs)
-    .where(eq(programs.userId, session.user.id))
-    .orderBy(desc(programs.createdAt));
+  const [list, inboxProgramId] = await Promise.all([
+    db
+      .select()
+      .from(programs)
+      .where(eq(programs.userId, session.user.id))
+      .orderBy(desc(programs.createdAt)),
+    getInboxProgramIdForUser(session.user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -136,20 +140,33 @@ export default async function ProgramsPage() {
                   </form>
                 </CardContent>
                 <CardFooter className="flex flex-col items-stretch gap-2 border-t">
-                  <p className="text-muted-foreground text-xs">
-                    配下にプロジェクトが 1 件もないときだけ削除できます（子があれば先に
-                    <Link href={`/programs/${p.id}`} className="underline">
-                      プロジェクト側
-                    </Link>
-                    で空にしてください）。
-                  </p>
-                  <ConfirmDeleteForm
-                    action={deleteProgram.bind(null, p.id)}
-                    title="このプログラムを削除しますか？"
-                    description="プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。"
-                    triggerLabel="削除を試みる"
-                    confirmLabel="削除する"
-                  />
+                  {inboxProgramId === p.id ? (
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      このプログラムには受信箱（Inbox）用のプロジェクトが常に含まれるため、子プロジェクトを
+                      0 件にすることはできず、削除もできません。未整理タスクの整理は
+                      <Link href="/inbox" className="text-primary mx-0.5 underline underline-offset-2">
+                        受信箱
+                      </Link>
+                      から行えます。
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-muted-foreground text-xs">
+                        配下にプロジェクトが 1 件もないときだけ削除できます（子があれば先に
+                        <Link href={`/programs/${p.id}`} className="underline">
+                          プロジェクト側
+                        </Link>
+                        で空にしてください）。
+                      </p>
+                      <ConfirmDeleteForm
+                        action={deleteProgram.bind(null, p.id)}
+                        title="このプログラムを削除しますか？"
+                        description="プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。"
+                        triggerLabel="削除を試みる"
+                        confirmLabel="削除する"
+                      />
+                    </>
+                  )}
                 </CardFooter>
               </Card>
             </li>
