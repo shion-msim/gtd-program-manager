@@ -18,6 +18,7 @@ export type SidebarProjectNav = {
 export type SidebarProgramNav = {
   id: string;
   name: string;
+  accentColor: string | null;
   /** 受信箱プログラム（Inbox プロジェクトを含む） */
   isInboxProgram: boolean;
   projects: SidebarProjectNav[];
@@ -37,6 +38,7 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
       .select({
         id: programs.id,
         name: programs.name,
+        accentColor: programs.accentColor,
       })
       .from(programs)
       .where(eq(programs.userId, userId))
@@ -95,6 +97,7 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
     byProgram.set(p.id, {
       id: p.id,
       name: p.name,
+      accentColor: p.accentColor,
       isInboxProgram: false,
       projects: [],
       inboxOpenTasks: [],
