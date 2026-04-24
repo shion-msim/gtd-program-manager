@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { signInWithE2eSecret, signInWithGoogle } from "./actions";
 
 export default function LoginPage() {
@@ -25,19 +27,13 @@ export default function LoginPage() {
             E2E 専用（本番では無効にしてください）
           </p>
           <div className="space-y-2">
-            <label
-              htmlFor="e2e-secret"
-              className="text-foreground text-sm font-medium"
-            >
-              E2E シークレット
-            </label>
-            <input
+            <Label htmlFor="e2e-secret">E2E シークレット</Label>
+            <Input
               id="e2e-secret"
               name="secret"
               type="password"
               autoComplete="off"
               placeholder="E2E_AUTH_SECRET と同じ値"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             />
           </div>
           <Button type="submit" variant="secondary" size="sm">

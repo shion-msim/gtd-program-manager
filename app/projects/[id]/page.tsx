@@ -1,33 +1,32 @@
 import { auth } from "@/auth";
+import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
+import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { db } from "@/db";
 import { programs, projects, tasks } from "@/db/schema";
 import { getOtherProjectsForMove } from "@/lib/project-move-targets";
-import { TASK_STATUSES } from "@/lib/task-constants";
+import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/task-constants";
 import { and, desc, eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   addProjectTask,
-  deleteProjectTask,
   moveProjectTask,
-  updateProjectTask,
+  updateProjectTaskStatus,
 } from "./actions";
+import { NativeSelect } from "@/components/ui/native-select";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import {
+  getPriorityColorsForUser,
+  priorityStripeColor,
+  resolveTaskEntityAccent,
+} from "@/lib/user-priority-colors";
 
-const inputClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
-
-const textareaClass =
-  "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[4.5rem] w-full min-w-0 rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none";
-
-const selectClass = inputClass;
-
-function dueForInput(v: string | null | undefined): string {
-  if (!v) {
-    return "";
-  }
-  return v.slice(0, 10);
-}
+const PROJECT_TASK_STATUS_OPTIONS = TASK_STATUSES.map((s) => ({
+  value: s,
+  label: TASK_STATUS_LABELS[s],
+}));
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -57,7 +56,7 @@ export default async function ProjectTasksPage({ params }: Props) {
     redirect("/inbox");
   }
 
-  const [openRows, doneRows, moveTargets] = await Promise.all([
+  const [openRows, doneRows, moveTargets, priorityColors] = await Promise.all([
     db
       .select()
       .from(tasks)
@@ -70,10 +69,11 @@ export default async function ProjectTasksPage({ params }: Props) {
       .orderBy(desc(tasks.updatedAt))
       .limit(40),
     getOtherProjectsForMove(userId, projectId),
+    getPriorityColorsForUser(userId),
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header className="space-y-1">
         <p className="text-muted-foreground text-sm">
           <Link href="/programs" className="underline underline-offset-4">
@@ -89,7 +89,7 @@ export default async function ProjectTasksPage({ params }: Props) {
         </p>
         <h1 className="text-xl font-semibold">{ctx.project.name}</h1>
         <p className="text-muted-foreground text-sm">
-          このプロジェクトのタスクを追加・編集し、別プロジェクトや受信箱へ移動できます。
+          一覧では状態だけ変更できます。タイトルやメモは「編集」から。移動もここから行えます。
         </p>
       </header>
 
@@ -100,13 +100,12 @@ export default async function ProjectTasksPage({ params }: Props) {
             <label htmlFor="new-task-title" className="sr-only">
               タイトル
             </label>
-            <input
+            <Input
               id="new-task-title"
               name="title"
               type="text"
               required
               placeholder="次の行動として追加"
-              className={inputClass}
             />
           </div>
           <Button type="submit" size="sm">
@@ -114,7 +113,7 @@ export default async function ProjectTasksPage({ params }: Props) {
           </Button>
         </form>
         <p className="text-muted-foreground text-xs">
-          既定の状態は「次の行動（next）」です。〆切や状態は追加後に編集できます。
+          既定の状態は「次の行動」です。追加後、一覧の状態または「編集」で更新できます。
         </p>
       </section>
 
@@ -129,149 +128,80 @@ export default async function ProjectTasksPage({ params }: Props) {
             className="divide-border border-border divide-y rounded-lg border"
             data-testid="project-tasks-open"
           >
-            {openRows.map((t) => (
-              <li
-                key={t.id}
-                id={`task-${t.id}`}
-                className="px-3 py-2.5 text-sm"
-                data-task-title={t.title}
-              >
-                <details>
-                  <summary className="cursor-pointer list-inside list-disc font-medium marker:text-muted-foreground">
-                    {t.title}
-                    {t.dueOn ? (
-                      <span className="text-muted-foreground ml-2 text-xs font-normal">
-                        〆 {t.dueOn}
-                      </span>
-                    ) : null}
-                  </summary>
-                  <div className="border-border mt-3 space-y-4 border-t pt-3">
+            {openRows.map((t) => {
+              const entityColor = resolveTaskEntityAccent(
+                ctx.project.accentColor,
+                ctx.program.accentColor,
+              );
+              const priorityColor = priorityStripeColor(t.priority, priorityColors);
+              return (
+              <li key={t.id} id={`task-${t.id}`} className="min-w-0" data-task-title={t.title}>
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={entityColor}
+                  priorityColor={priorityColor}
+                  className="text-sm"
+                >
+                <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="font-medium">{t.title}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t.dueOn ? `〆 ${t.dueOn}` : "〆切なし"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <TaskStatusInlineForm
+                    action={updateProjectTaskStatus.bind(null, t.id, projectId)}
+                    defaultStatus={t.status}
+                    options={PROJECT_TASK_STATUS_OPTIONS}
+                    selectId={`pt-status-${t.id}`}
+                  />
+                  <ProjectTaskEditDialog
+                    projectId={projectId}
+                    task={{
+                      id: t.id,
+                      title: t.title,
+                      note: t.note,
+                      dueOn: t.dueOn,
+                      status: t.status,
+                      priority: t.priority,
+                    }}
+                  />
+                  {moveTargets.length > 0 ? (
                     <form
-                      action={updateProjectTask.bind(null, t.id, projectId)}
-                      className="space-y-2"
+                      action={moveProjectTask.bind(null, t.id, projectId)}
+                      className="flex flex-wrap items-end gap-2"
                     >
-                      <div>
-                        <label
-                          htmlFor={`pt-title-${t.id}`}
-                          className="text-muted-foreground mb-1 block text-xs"
-                        >
-                          タイトル
+                      <div className="min-w-[12rem] flex-1">
+                        <label htmlFor={`pt-move-${t.id}`} className="sr-only">
+                          移動先
                         </label>
-                        <input
-                          id={`pt-title-${t.id}`}
-                          name="title"
-                          type="text"
+                        <NativeSelect
+                          id={`pt-move-${t.id}`}
+                          name="targetProjectId"
                           required
-                          defaultValue={t.title}
-                          className={inputClass}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor={`pt-note-${t.id}`}
-                          className="text-muted-foreground mb-1 block text-xs"
+                          data-testid="project-move-target"
+                          defaultValue=""
                         >
-                          メモ
-                        </label>
-                        <textarea
-                          id={`pt-note-${t.id}`}
-                          name="note"
-                          rows={3}
-                          defaultValue={t.note ?? ""}
-                          className={textareaClass}
-                        />
+                          <option value="">移動先を選択…</option>
+                          {moveTargets.map((m) => (
+                            <option key={m.projectId} value={m.projectId}>
+                              {m.programName} / {m.projectName}
+                            </option>
+                          ))}
+                        </NativeSelect>
                       </div>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="min-w-[10rem] flex-1">
-                          <label
-                            htmlFor={`pt-due-${t.id}`}
-                            className="text-muted-foreground mb-1 block text-xs"
-                          >
-                            〆切
-                          </label>
-                          <input
-                            id={`pt-due-${t.id}`}
-                            name="dueOn"
-                            type="date"
-                            defaultValue={dueForInput(t.dueOn ?? undefined)}
-                            className={inputClass}
-                          />
-                        </div>
-                        <div className="min-w-[10rem] flex-1">
-                          <label
-                            htmlFor={`pt-status-${t.id}`}
-                            className="text-muted-foreground mb-1 block text-xs"
-                          >
-                            状態
-                          </label>
-                          <select
-                            id={`pt-status-${t.id}`}
-                            name="status"
-                            required
-                            defaultValue={t.status}
-                            className={selectClass}
-                          >
-                            {TASK_STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <Button type="submit" size="sm" variant="secondary">
-                        変更を保存
+                      <Button type="submit" size="sm" data-testid="project-move-submit">
+                        移動
                       </Button>
                     </form>
-
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground text-xs font-medium">
-                        別プロジェクトへ移す
-                      </p>
-                      {moveTargets.length === 0 ? (
-                        <p className="text-muted-foreground text-xs">
-                          移動先がありません。
-                        </p>
-                      ) : (
-                        <form
-                          action={moveProjectTask.bind(null, t.id, projectId)}
-                          className="flex flex-wrap items-end gap-2"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <label htmlFor={`pt-move-${t.id}`} className="sr-only">
-                              移動先
-                            </label>
-                            <select
-                              id={`pt-move-${t.id}`}
-                              name="targetProjectId"
-                              required
-                              className={selectClass}
-                              data-testid="project-move-target"
-                            >
-                              <option value="">選択…</option>
-                              {moveTargets.map((m) => (
-                                <option key={m.projectId} value={m.projectId}>
-                                  {m.programName} / {m.projectName}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <Button type="submit" size="sm" data-testid="project-move-submit">
-                            移動
-                          </Button>
-                        </form>
-                      )}
-                    </div>
-
-                    <form action={deleteProjectTask.bind(null, t.id, projectId)}>
-                      <Button type="submit" size="sm" variant="destructive">
-                        削除
-                      </Button>
-                    </form>
-                  </div>
-                </details>
+                  ) : null}
+                </div>
+                </div>
+                </ListRowEdgeAccent>
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
       </section>
@@ -280,50 +210,52 @@ export default async function ProjectTasksPage({ params }: Props) {
         <section className="space-y-3">
           <h2 className="text-sm font-medium">完了（直近）</h2>
           <ul className="divide-border border-border divide-y rounded-lg border text-sm">
-            {doneRows.map((t) => (
-              <li key={t.id} id={`task-${t.id}`} className="px-3 py-2.5">
-                <details>
-                  <summary className="text-muted-foreground cursor-pointer line-through">
-                    {t.title}
-                  </summary>
-                  <div className="border-border mt-3 space-y-3 border-t pt-3">
-                    <form
-                      action={updateProjectTask.bind(null, t.id, projectId)}
-                      className="space-y-2"
-                    >
-                      <input type="hidden" name="title" value={t.title} />
-                      <p className="text-muted-foreground text-xs">
-                        完了から戻すには状態を変更してください。
-                      </p>
-                      <div>
-                        <label
-                          htmlFor={`pt-done-status-${t.id}`}
-                          className="text-muted-foreground mb-1 block text-xs"
-                        >
-                          状態
-                        </label>
-                        <select
-                          id={`pt-done-status-${t.id}`}
-                          name="status"
-                          required
-                          defaultValue="done"
-                          className={selectClass}
-                        >
-                          {TASK_STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <Button type="submit" size="sm" variant="secondary">
-                        状態を更新
-                      </Button>
-                    </form>
+            {doneRows.map((t) => {
+              const entityColor = resolveTaskEntityAccent(
+                ctx.project.accentColor,
+                ctx.program.accentColor,
+              );
+              const priorityColor = priorityStripeColor(t.priority, priorityColors);
+              return (
+              <li key={t.id} id={`task-${t.id}`} className="min-w-0">
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={entityColor}
+                  priorityColor={priorityColor}
+                >
+                <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-muted-foreground line-through">{t.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {t.dueOn ? `〆 ${t.dueOn}` : ""}
+                    </p>
                   </div>
-                </details>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <TaskStatusInlineForm
+                      action={updateProjectTaskStatus.bind(null, t.id, projectId)}
+                      defaultStatus={t.status}
+                      options={PROJECT_TASK_STATUS_OPTIONS}
+                      selectId={`pt-status-done-${t.id}`}
+                    />
+                    <ProjectTaskEditDialog
+                      projectId={projectId}
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                      triggerLabel="詳細"
+                      triggerVariant="outline"
+                    />
+                  </div>
+                </div>
+                </ListRowEdgeAccent>
               </li>
-            ))}
+            );
+            })}
           </ul>
         </section>
       ) : null}

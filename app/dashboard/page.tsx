@@ -1,9 +1,15 @@
 import { auth } from "@/auth";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import { TaskProgramProjectTags } from "@/components/task-program-project-tags";
+import { buttonVariants } from "@/components/ui/button";
 import { getDefaultTimeZone, getSummaryForUser } from "@/lib/dashboard-data";
+import { normalizeHexColor } from "@/lib/hex-color";
+import {
+  getPriorityColorsForUser,
+  priorityStripeColor,
+} from "@/lib/user-priority-colors";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { signOutAction } from "./actions";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
@@ -12,17 +18,21 @@ export default async function DashboardPage() {
     redirect("/login");
   }
   const tz = getDefaultTimeZone();
-  const s = await getSummaryForUser(session.user.id, tz);
+  const [s, priorityColors] = await Promise.all([
+    getSummaryForUser(session.user.id, tz),
+    getPriorityColorsForUser(session.user.id),
+  ]);
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-8 p-6">
+    <div className="mx-auto flex min-h-svh max-w-3xl flex-col gap-8 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">ダッシュボード</h1>
-        <form action={signOutAction}>
-          <Button type="submit" variant="outline" size="sm">
-            ログアウト
-          </Button>
-        </form>
+        <Link
+          href="/settings"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
+          設定
+        </Link>
       </header>
       <p className="text-muted-foreground text-sm" data-testid="dashboard-greeting">
         ようこそ、{session.user.name ?? session.user.email} さん。今日は{" "}
@@ -31,23 +41,61 @@ export default async function DashboardPage() {
       </p>
 
       <section className="space-y-2 rounded-lg border p-4">
-        <h2 className="text-sm font-medium">Inbox</h2>
+        <h2 className="text-sm font-medium">受信箱（Inbox）</h2>
         {s.inboxCount > 0 ? (
-          <p>
-            未整理が{" "}
-            <span className="text-destructive font-medium tabular-nums">
-              {s.inboxCount}
-            </span>{" "}
-            件あります。
-          </p>
+          <>
+            <p>
+              未整理が{" "}
+              <span className="text-destructive font-medium tabular-nums">
+                {s.inboxCount}
+              </span>{" "}
+              件あります。
+            </p>
+            <ul className="space-y-2 text-sm">
+              {s.inboxTasks.map((t) => (
+                <li key={t.id} className="min-w-0">
+                  <div className="py-0.5">
+                    <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
+                      <Link
+                        href={`/projects/${t.projectId}#task-${t.id}`}
+                        className="min-w-0 flex-1 truncate underline underline-offset-4"
+                      >
+                        {t.title}
+                      </Link>
+                      <TaskProgramProjectTags
+                        programName={t.programName}
+                        projectName={t.projectName}
+                        programId={t.programId}
+                        projectId={t.projectId}
+                        programAccent={t.programAccent}
+                        projectAccent={t.projectAccent}
+                        priority={t.priority}
+                        priorityColor={priorityStripeColor(
+                          t.priority,
+                          priorityColors,
+                        )}
+                        className="shrink-0"
+                      />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {s.inboxTasks.length < s.inboxCount ? (
+              <p className="text-muted-foreground text-xs">
+                ほか {s.inboxCount - s.inboxTasks.length}{" "}
+                件は整理ビューで確認できます。
+              </p>
+            ) : null}
+          </>
         ) : (
           <p className="text-muted-foreground">受信箱は空です。</p>
         )}
         <Link
-          href="/inbox"
+          href="/inbox/table"
           className={cn(buttonVariants({ size: "sm", variant: "secondary" }))}
         >
-          Inbox へ
+          整理する
         </Link>
       </section>
 
@@ -56,15 +104,33 @@ export default async function DashboardPage() {
         {s.dueToday.length === 0 ? (
           <p className="text-muted-foreground">今日〆切の未完了はありません。</p>
         ) : (
-          <ul className="list-inside list-disc text-sm">
+          <ul className="space-y-2 text-sm">
             {s.dueToday.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/projects/${t.projectId}#task-${t.id}`}
-                  className="underline underline-offset-4"
-                >
-                  {t.title}
-                </Link>
+              <li key={t.id} className="min-w-0">
+                <div className="py-0.5">
+                  <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
+                    <Link
+                      href={`/projects/${t.projectId}#task-${t.id}`}
+                      className="min-w-0 flex-1 truncate underline underline-offset-4"
+                    >
+                      {t.title}
+                    </Link>
+                    <TaskProgramProjectTags
+                      programName={t.programName}
+                      projectName={t.projectName}
+                      programId={t.programId}
+                      projectId={t.projectId}
+                      programAccent={t.programAccent}
+                      projectAccent={t.projectAccent}
+                      priority={t.priority}
+                      priorityColor={priorityStripeColor(
+                        t.priority,
+                        priorityColors,
+                      )}
+                      className="shrink-0"
+                    />
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -76,15 +142,33 @@ export default async function DashboardPage() {
         {s.nextActions.length === 0 ? (
           <p className="text-muted-foreground">次の行動（next）はまだありません。</p>
         ) : (
-          <ul className="list-inside list-disc text-sm">
+          <ul className="space-y-2 text-sm">
             {s.nextActions.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/projects/${t.projectId}#task-${t.id}`}
-                  className="underline underline-offset-4"
-                >
-                  {t.title}
-                </Link>
+              <li key={t.id} className="min-w-0">
+                <div className="py-0.5">
+                  <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
+                    <Link
+                      href={`/projects/${t.projectId}#task-${t.id}`}
+                      className="min-w-0 flex-1 truncate underline underline-offset-4"
+                    >
+                      {t.title}
+                    </Link>
+                    <TaskProgramProjectTags
+                      programName={t.programName}
+                      projectName={t.projectName}
+                      programId={t.programId}
+                      projectId={t.projectId}
+                      programAccent={t.programAccent}
+                      projectAccent={t.projectAccent}
+                      priority={t.priority}
+                      priorityColor={priorityStripeColor(
+                        t.priority,
+                        priorityColors,
+                      )}
+                      className="shrink-0"
+                    />
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -112,9 +196,26 @@ export default async function DashboardPage() {
         {s.activePrograms.length === 0 ? (
           <p className="text-muted-foreground">期間中のプログラムはまだありません。</p>
         ) : (
-          <ul className="list-inside list-disc text-sm">
+          <ul className="space-y-2 text-sm">
             {s.activePrograms.map((p) => (
-              <li key={p.id}>{p.name}</li>
+              <li key={p.id} className="min-w-0">
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={
+                    p.accentColor ? normalizeHexColor(p.accentColor) : null
+                  }
+                  priorityColor={null}
+                >
+                  <div className="py-0.5">
+                    <Link
+                      href={`/programs/${p.id}`}
+                      className="underline underline-offset-4"
+                    >
+                      {p.name}
+                    </Link>
+                  </div>
+                </ListRowEdgeAccent>
+              </li>
             ))}
           </ul>
         )}

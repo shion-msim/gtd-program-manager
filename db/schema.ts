@@ -36,6 +36,8 @@ export const programs = pgTable(
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    /** カード左端などに使う #RRGGBB。未設定は null */
+    accentColor: text("accent_color"),
     startOn: date("start_on"),
     endOn: date("end_on"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -61,6 +63,7 @@ export const projects = pgTable(
       .notNull()
       .references(() => programs.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    accentColor: text("accent_color"),
     isInbox: boolean("is_inbox").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -89,6 +92,8 @@ export const tasks = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     status: text("status").notNull(),
+    /** none | low | medium | high */
+    priority: text("priority").notNull().default("none"),
     dueOn: date("due_on"),
     note: text("note"),
     sortOrder: integer("sort_order"),
@@ -128,3 +133,11 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+/** 優先度キーごとの色（JSON オブジェクト）をユーザー単位で保持 */
+export const userAppSettings = pgTable("user_app_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  priorityColorsJson: text("priority_colors_json").notNull().default("{}"),
+});

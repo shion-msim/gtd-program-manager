@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { parseOptionalHexColor } from "@/lib/hex-color";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 async function projectForUser(projectId: string, userId: string) {
   const [row] = await db
@@ -44,32 +47,47 @@ export async function createProject(programId: string, formData: FormData) {
   revalidatePath("/programs");
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
+  revalidateAppShell();
+  redirect(`/programs/${programId}?toast=created`);
 }
 
-export async function updateProject(projectId: string, formData: FormData) {
+export async function updateProject(
+  projectId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const existing = await projectForUser(projectId, session.user.id);
   if (!existing || existing.isInbox) {
-    return;
+    return { ok: false };
   }
   const nameRaw = formData.get("name");
   const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
   if (name === "") {
-    return;
+    return { ok: false };
   }
+  const clearAccent = formData.get("clearAccent") === "on";
+  const accentColor = clearAccent
+    ? null
+    : parseOptionalHexColor(formData.get("accentColor"));
   await db
     .update(projects)
     .set({
       name,
+      accentColor,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
-  revalidatePath(`/programs/${existing.programId}`);
+  const programId = existing.programId;
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath(`/projects/${projectId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
+  revalidatePath("/tasks");
+  revalidateAppShell();
+  return { ok: true };
 }
 
 export async function deleteProject(projectId: string, formData: FormData) {
@@ -89,4 +107,6 @@ export async function deleteProject(projectId: string, formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  revalidateAppShell();
+  redirect("/programs?toast=deleted");
 }

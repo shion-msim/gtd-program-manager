@@ -1,19 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
+import { isTaskPriority } from "@/lib/task-priority";
 import { isTaskStatus } from "@/lib/task-constants";
 
-function revalidateTaskSurfaces(projectId: string, programId: string) {
+function revalidateTaskSurfaces(
+  projectId: string,
+  programId: string,
+  taskId?: string,
+) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  revalidatePath("/tasks");
+  if (taskId) {
+    revalidatePath(`/projects/${projectId}/tasks/${taskId}/edit`);
+  }
+  revalidateAppShell();
 }
 
 async function nonInboxProjectForUser(projectId: string, userId: string) {
@@ -68,29 +80,27 @@ export async function addProjectTask(projectId: string, formData: FormData) {
     status: "next",
   });
   revalidateTaskSurfaces(projectId, proj.programId);
+  redirect(`/projects/${projectId}?toast=created`);
 }
 
-export async function updateProjectTask(
+async function applyProjectTaskFields(
   taskId: string,
   projectId: string,
+  userId: string,
   formData: FormData,
-) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return;
-  }
-  const proj = await nonInboxProjectForUser(projectId, session.user.id);
+): Promise<{ ok: true; programId: string } | { ok: false }> {
+  const proj = await nonInboxProjectForUser(projectId, userId);
   if (!proj) {
-    return;
+    return { ok: false };
   }
-  const existing = await taskInProject(taskId, projectId, session.user.id);
+  const existing = await taskInProject(taskId, projectId, userId);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const titleRaw = formData.get("title");
   const title = typeof titleRaw === "string" ? titleRaw.trim() : "";
   if (title === "") {
-    return;
+    return { ok: false };
   }
   const noteRaw = formData.get("note");
   const note =
@@ -110,6 +120,67 @@ export async function updateProjectTask(
   } else if (typeof dueRaw === "string") {
     dueOn = dueRaw.trim();
   } else {
+    return { ok: false };
+  }
+  const statusRaw = formData.get("status");
+  if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
+    return { ok: false };
+  }
+  const priorityRaw = formData.get("priority");
+  if (typeof priorityRaw !== "string" || !isTaskPriority(priorityRaw)) {
+    return { ok: false };
+  }
+  await db
+    .update(tasks)
+    .set({
+      title,
+      ...(note !== undefined ? { note } : {}),
+      ...(dueOn !== undefined ? { dueOn } : {}),
+      status: statusRaw,
+      priority: priorityRaw,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId));
+  return { ok: true, programId: proj.programId };
+}
+
+export async function updateProjectTaskStay(
+  taskId: string,
+  projectId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false };
+  }
+  const result = await applyProjectTaskFields(
+    taskId,
+    projectId,
+    session.user.id,
+    formData,
+  );
+  if (!result.ok) {
+    return { ok: false };
+  }
+  revalidateTaskSurfaces(projectId, result.programId, taskId);
+  return { ok: true };
+}
+
+export async function updateProjectTaskStatus(
+  taskId: string,
+  projectId: string,
+  formData: FormData,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const proj = await nonInboxProjectForUser(projectId, session.user.id);
+  if (!proj) {
+    return;
+  }
+  const existing = await taskInProject(taskId, projectId, session.user.id);
+  if (!existing) {
     return;
   }
   const statusRaw = formData.get("status");
@@ -119,14 +190,33 @@ export async function updateProjectTask(
   await db
     .update(tasks)
     .set({
-      title,
-      ...(note !== undefined ? { note } : {}),
-      ...(dueOn !== undefined ? { dueOn } : {}),
       status: statusRaw,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(projectId, proj.programId);
+  revalidateTaskSurfaces(projectId, proj.programId, taskId);
+}
+
+export async function updateProjectTask(
+  taskId: string,
+  projectId: string,
+  formData: FormData,
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const result = await applyProjectTaskFields(
+    taskId,
+    projectId,
+    session.user.id,
+    formData,
+  );
+  if (!result.ok) {
+    return;
+  }
+  revalidateTaskSurfaces(projectId, result.programId, taskId);
+  redirect(`/projects/${projectId}?toast=saved`);
 }
 
 export async function moveProjectTask(
@@ -174,9 +264,10 @@ export async function moveProjectTask(
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(fromProjectId, fromProj.programId);
+  revalidateTaskSurfaces(fromProjectId, fromProj.programId, taskId);
   revalidatePath(`/projects/${target.id}`);
   revalidatePath(`/programs/${target.programId}`);
+  redirect(`/projects/${target.id}?toast=moved`);
 }
 
 export async function deleteProjectTask(
@@ -198,5 +289,6 @@ export async function deleteProjectTask(
     return;
   }
   await db.delete(tasks).where(eq(tasks.id, taskId));
-  revalidateTaskSurfaces(projectId, proj.programId);
+  revalidateTaskSurfaces(projectId, proj.programId, taskId);
+  redirect(`/projects/${projectId}?toast=deleted`);
 }

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SiteHeader } from "@/components/site-header";
+import { MainChrome } from "@/components/main-chrome";
+import { SearchParamsToast } from "@/components/search-params-toast";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GTD プログラムマネージャー",
-  description: "プログラム・プロジェクト・タスク管理（GTD 型）",
+  title: { default: "Kernie", template: "%s | Kernie" },
+  description: "Kernie — プログラム・プロジェクト・タスク管理（GTD 型）",
+  applicationName: "Kernie",
+  appleWebApp: { title: "Kernie" },
 };
 
 export default function RootLayout({
@@ -36,9 +41,13 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
+          storage="local"
         >
-          <SiteHeader />
-          <div className="flex-1">{children}</div>
+          <MainChrome>{children}</MainChrome>
+          <Suspense fallback={null}>
+            <SearchParamsToast />
+          </Suspense>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

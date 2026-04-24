@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { getDefaultTimeZone, getWorkloadViewForUser } from "@/lib/dashboard-data";
-import { addDaysYmd } from "@/lib/calendar-buckets";
+import {
+  getPriorityColorsForUser,
+  priorityStripeColor,
+  resolveTaskEntityAccent,
+} from "@/lib/user-priority-colors";
+import { addDaysYmd, mondayOfWeekContainingYmd } from "@/lib/calendar-buckets";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -22,11 +28,15 @@ export default async function WorkloadPage() {
     redirect("/login");
   }
   const timeZone = getDefaultTimeZone();
-  const data = await getWorkloadViewForUser(session.user.id, timeZone);
+  const [data, priorityColors] = await Promise.all([
+    getWorkloadViewForUser(session.user.id, timeZone),
+    getPriorityColorsForUser(session.user.id),
+  ]);
   const maxCount = Math.max(
     1,
     ...data.buckets.map((b) => b.count),
   );
+  const currentWeekStart = mondayOfWeekContainingYmd(data.todayYmd);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -61,33 +71,54 @@ export default async function WorkloadPage() {
                 {b.count === 0 ? (
                   <p className="text-muted-foreground text-xs">この週の〆切はありません</p>
                 ) : (
-                  <ul className="text-foreground/90 list-inside list-disc text-sm">
-                    {b.tasks.slice(0, 8).map((t) => (
-                      <li key={t.id}>
-                        {t.projectId ? (
-                          <Link
-                            href={`/projects/${t.projectId}#task-${t.id}`}
-                            className="underline underline-offset-4"
+                  <details
+                    open={b.weekStart === currentWeekStart}
+                    className="rounded-md border border-border bg-muted/20 px-2 py-1"
+                  >
+                    <summary className="cursor-pointer text-sm font-medium">
+                      この週のタスク一覧（{b.count} 件）
+                    </summary>
+                    <ul className="text-foreground/90 mt-2 space-y-1 text-sm">
+                      {b.tasks.slice(0, 8).map((t) => (
+                        <li key={t.id} className="list-none">
+                          <ListRowEdgeAccent
+                            as="div"
+                            entityColor={resolveTaskEntityAccent(
+                              t.projectAccent,
+                              t.programAccent,
+                            )}
+                            priorityColor={priorityStripeColor(
+                              t.priority,
+                              priorityColors,
+                            )}
                           >
-                            {t.title}
-                          </Link>
-                        ) : (
-                          t.title
-                        )}
-                        {t.dueOn ? (
-                          <span className="text-muted-foreground">
-                            {" "}
-                           （〆 {t.dueOn}）
-                          </span>
-                        ) : null}
-                      </li>
-                    ))}
-                    {b.tasks.length > 8 ? (
-                      <li className="text-muted-foreground list-none text-xs">
-                        ほか {b.tasks.length - 8} 件
-                      </li>
-                    ) : null}
-                  </ul>
+                            <div className="flex flex-wrap items-baseline gap-x-2 py-0.5">
+                              {t.projectId ? (
+                                <Link
+                                  href={`/projects/${t.projectId}#task-${t.id}`}
+                                  className="underline underline-offset-4"
+                                >
+                                  {t.title}
+                                </Link>
+                              ) : (
+                                <span>{t.title}</span>
+                              )}
+                              {t.dueOn ? (
+                                <span className="text-muted-foreground text-xs">
+                                  （〆 {t.dueOn}）
+                                </span>
+                              ) : null}
+                            </div>
+                          </ListRowEdgeAccent>
+                        </li>
+                      ))}
+                      {b.tasks.length > 8 ? (
+                        <li className="text-muted-foreground mt-1 list-none text-xs">
+                          ほか {b.tasks.length - 8} 件
+                        </li>
+                      ) : null}
+                    </ul>
+                  </details>
                 )}
               </li>
             ))}

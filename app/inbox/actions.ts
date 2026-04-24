@@ -1,17 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 import { getInboxProjectId } from "@/lib/inbox";
+import { parseInboxReturnPath } from "@/lib/inbox-return-path";
+import { revalidateAppShell } from "@/lib/revalidate-app-shell";
+import { isTaskPriority } from "@/lib/task-priority";
 import { isTaskStatus } from "@/lib/task-constants";
 
-function revalidateInboxRelated() {
+function revalidateInboxRelated(taskId?: string) {
   revalidatePath("/inbox");
+  revalidatePath("/inbox/table");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  revalidatePath("/tasks");
+  if (taskId) {
+    revalidatePath(`/inbox/tasks/${taskId}/edit`);
+  }
+  revalidateAppShell();
 }
 
 async function taskInUserInbox(userId: string, taskId: string) {
@@ -55,21 +65,23 @@ export async function addInboxTask(formData: FormData) {
     status: "inbox",
   });
   revalidateInboxRelated();
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=created`);
 }
 
-export async function updateInboxTask(taskId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return;
-  }
-  const existing = await taskInUserInbox(session.user.id, taskId);
+async function applyInboxTaskFields(
+  userId: string,
+  taskId: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false }> {
+  const existing = await taskInUserInbox(userId, taskId);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const titleRaw = formData.get("title");
   const title = typeof titleRaw === "string" ? titleRaw.trim() : "";
   if (title === "") {
-    return;
+    return { ok: false };
   }
   const noteRaw = formData.get("note");
   const note =
@@ -89,6 +101,59 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
   } else if (typeof dueRaw === "string") {
     dueOn = dueRaw.trim();
   } else {
+    return { ok: false };
+  }
+  const statusRaw = formData.get("status");
+  if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
+    return { ok: false };
+  }
+  if (statusRaw === "done") {
+    return { ok: false };
+  }
+  const priorityRaw = formData.get("priority");
+  if (typeof priorityRaw !== "string" || !isTaskPriority(priorityRaw)) {
+    return { ok: false };
+  }
+  await db
+    .update(tasks)
+    .set({
+      title,
+      ...(note !== undefined ? { note } : {}),
+      ...(dueOn !== undefined ? { dueOn } : {}),
+      status: statusRaw,
+      priority: priorityRaw,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId));
+  return { ok: true };
+}
+
+export async function updateInboxTaskStay(
+  taskId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false };
+  }
+  const applied = await applyInboxTaskFields(session.user.id, taskId, formData);
+  if (!applied.ok) {
+    return { ok: false };
+  }
+  revalidateInboxRelated(taskId);
+  return { ok: true };
+}
+
+export async function updateInboxTaskStatus(
+  taskId: string,
+  formData: FormData,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const existing = await taskInUserInbox(session.user.id, taskId);
+  if (!existing) {
     return;
   }
   const statusRaw = formData.get("status");
@@ -101,14 +166,25 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
   await db
     .update(tasks)
     .set({
-      title,
-      ...(note !== undefined ? { note } : {}),
-      ...(dueOn !== undefined ? { dueOn } : {}),
       status: statusRaw,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+}
+
+export async function updateInboxTask(taskId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const applied = await applyInboxTaskFields(session.user.id, taskId, formData);
+  if (!applied.ok) {
+    return;
+  }
+  revalidateInboxRelated(taskId);
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=saved`);
 }
 
 export async function moveInboxTaskToProject(taskId: string, formData: FormData) {
@@ -147,11 +223,13 @@ export async function moveInboxTaskToProject(taskId: string, formData: FormData)
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=moved`);
 }
 
 export async function completeInboxTask(taskId: string, formData: FormData) {
-  void formData;
+  const returnPath = parseInboxReturnPath(formData);
   const session = await auth();
   if (!session?.user?.id) {
     return;
@@ -167,5 +245,6 @@ export async function completeInboxTask(taskId: string, formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
-  revalidateInboxRelated();
+  revalidateInboxRelated(taskId);
+  redirect(`${returnPath}?toast=done`);
 }
