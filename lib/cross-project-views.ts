@@ -32,6 +32,7 @@ export type OpenTaskListRow = {
   title: string;
   status: string;
   dueOn: string | null;
+  note: string | null;
   projectId: string;
   projectName: string;
   isInbox: boolean;
@@ -48,6 +49,7 @@ export async function getOpenTasksListRowsForUser(
       title: tasks.title,
       status: tasks.status,
       dueOn: tasks.dueOn,
+      note: tasks.note,
       projectId: projects.id,
       projectName: projects.name,
       isInbox: projects.isInbox,

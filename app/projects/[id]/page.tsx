@@ -1,19 +1,26 @@
 import { auth } from "@/auth";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
+import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { db } from "@/db";
 import { programs, projects, tasks } from "@/db/schema";
 import { getOtherProjectsForMove } from "@/lib/project-move-targets";
-import { taskStatusLabel } from "@/lib/task-constants";
+import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/task-constants";
 import { and, desc, eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   addProjectTask,
   moveProjectTask,
+  updateProjectTaskStatus,
 } from "./actions";
 import { NativeSelect } from "@/components/ui/native-select";
-import { cn } from "@/lib/utils";
+
+const PROJECT_TASK_STATUS_OPTIONS = TASK_STATUSES.map((s) => ({
+  value: s,
+  label: TASK_STATUS_LABELS[s],
+}));
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -75,7 +82,7 @@ export default async function ProjectTasksPage({ params }: Props) {
         </p>
         <h1 className="text-xl font-semibold">{ctx.project.name}</h1>
         <p className="text-muted-foreground text-sm">
-          タスクの編集は「編集」から開きます。移動はここからも行えます。
+          一覧では状態だけ変更できます。タイトルやメモは「編集」から。移動もここから行えます。
         </p>
       </header>
 
@@ -99,7 +106,7 @@ export default async function ProjectTasksPage({ params }: Props) {
           </Button>
         </form>
         <p className="text-muted-foreground text-xs">
-          既定の状態は「次の行動」です。〆切や状態は追加後に編集できます。
+          既定の状態は「次の行動」です。追加後、一覧の状態または「編集」で更新できます。
         </p>
       </section>
 
@@ -124,19 +131,26 @@ export default async function ProjectTasksPage({ params }: Props) {
                 <div className="min-w-0 space-y-1">
                   <p className="font-medium">{t.title}</p>
                   <p className="text-muted-foreground text-xs">
-                    {taskStatusLabel(t.status)}
-                    {t.dueOn ? ` · 〆 ${t.dueOn}` : ""}
+                    {t.dueOn ? `〆 ${t.dueOn}` : "〆切なし"}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href={`/projects/${projectId}/tasks/${t.id}/edit`}
-                    className={cn(
-                      buttonVariants({ variant: "secondary", size: "sm" }),
-                    )}
-                  >
-                    編集
-                  </Link>
+                  <TaskStatusInlineForm
+                    action={updateProjectTaskStatus.bind(null, t.id, projectId)}
+                    defaultStatus={t.status}
+                    options={PROJECT_TASK_STATUS_OPTIONS}
+                    selectId={`pt-status-${t.id}`}
+                  />
+                  <ProjectTaskEditDialog
+                    projectId={projectId}
+                    task={{
+                      id: t.id,
+                      title: t.title,
+                      note: t.note,
+                      dueOn: t.dueOn,
+                      status: t.status,
+                    }}
+                  />
                   {moveTargets.length > 0 ? (
                     <form
                       action={moveProjectTask.bind(null, t.id, projectId)}
@@ -179,16 +193,33 @@ export default async function ProjectTasksPage({ params }: Props) {
           <ul className="divide-border border-border divide-y rounded-lg border text-sm">
             {doneRows.map((t) => (
               <li key={t.id} id={`task-${t.id}`} className="px-3 py-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-muted-foreground line-through">{t.title}</p>
-                  <Link
-                    href={`/projects/${projectId}/tasks/${t.id}/edit`}
-                    className={cn(
-                      buttonVariants({ variant: "outline", size: "sm" }),
-                    )}
-                  >
-                    状態を変える
-                  </Link>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-muted-foreground line-through">{t.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {t.dueOn ? `〆 ${t.dueOn}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <TaskStatusInlineForm
+                      action={updateProjectTaskStatus.bind(null, t.id, projectId)}
+                      defaultStatus={t.status}
+                      options={PROJECT_TASK_STATUS_OPTIONS}
+                      selectId={`pt-status-done-${t.id}`}
+                    />
+                    <ProjectTaskEditDialog
+                      projectId={projectId}
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                      }}
+                      triggerLabel="詳細"
+                      triggerVariant="outline"
+                    />
+                  </div>
                 </div>
               </li>
             ))}

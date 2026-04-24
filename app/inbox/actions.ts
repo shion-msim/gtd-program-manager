@@ -14,6 +14,7 @@ function revalidateInboxRelated(taskId?: string) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
+  revalidatePath("/tasks");
   if (taskId) {
     revalidatePath(`/inbox/tasks/${taskId}/edit`);
   }
@@ -64,19 +65,19 @@ export async function addInboxTask(formData: FormData) {
   redirect("/inbox?toast=created");
 }
 
-export async function updateInboxTask(taskId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return;
-  }
-  const existing = await taskInUserInbox(session.user.id, taskId);
+async function applyInboxTaskFields(
+  userId: string,
+  taskId: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false }> {
+  const existing = await taskInUserInbox(userId, taskId);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const titleRaw = formData.get("title");
   const title = typeof titleRaw === "string" ? titleRaw.trim() : "";
   if (title === "") {
-    return;
+    return { ok: false };
   }
   const noteRaw = formData.get("note");
   const note =
@@ -96,6 +97,54 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
   } else if (typeof dueRaw === "string") {
     dueOn = dueRaw.trim();
   } else {
+    return { ok: false };
+  }
+  const statusRaw = formData.get("status");
+  if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
+    return { ok: false };
+  }
+  if (statusRaw === "done") {
+    return { ok: false };
+  }
+  await db
+    .update(tasks)
+    .set({
+      title,
+      ...(note !== undefined ? { note } : {}),
+      ...(dueOn !== undefined ? { dueOn } : {}),
+      status: statusRaw,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId));
+  return { ok: true };
+}
+
+export async function updateInboxTaskStay(
+  taskId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false };
+  }
+  const applied = await applyInboxTaskFields(session.user.id, taskId, formData);
+  if (!applied.ok) {
+    return { ok: false };
+  }
+  revalidateInboxRelated(taskId);
+  return { ok: true };
+}
+
+export async function updateInboxTaskStatus(
+  taskId: string,
+  formData: FormData,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const existing = await taskInUserInbox(session.user.id, taskId);
+  if (!existing) {
     return;
   }
   const statusRaw = formData.get("status");
@@ -108,13 +157,22 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
   await db
     .update(tasks)
     .set({
-      title,
-      ...(note !== undefined ? { note } : {}),
-      ...(dueOn !== undefined ? { dueOn } : {}),
       status: statusRaw,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
+  revalidateInboxRelated(taskId);
+}
+
+export async function updateInboxTask(taskId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const applied = await applyInboxTaskFields(session.user.id, taskId, formData);
+  if (!applied.ok) {
+    return;
+  }
   revalidateInboxRelated(taskId);
   redirect("/inbox?toast=saved");
 }

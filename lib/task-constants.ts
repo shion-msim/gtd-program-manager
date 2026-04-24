@@ -7,6 +7,9 @@ export const TASK_STATUSES = [
   "someday",
 ] as const;
 
+/** Inbox タスクの編集で選べる状態（完了は「完了」ボタンへ誘導） */
+export const INBOX_EDITABLE_STATUSES = TASK_STATUSES.filter((s) => s !== "done");
+
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {

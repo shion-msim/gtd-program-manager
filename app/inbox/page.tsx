@@ -1,17 +1,30 @@
 import { auth } from "@/auth";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { InboxTaskEditDialog } from "@/components/inbox-task-edit-dialog";
+import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { ensureInboxForUser } from "@/lib/inbox";
 import {
   getInboxOpenTasksForUser,
   getNonInboxProjectsForUser,
 } from "@/lib/inbox-tasks";
-import { taskStatusLabel } from "@/lib/task-constants";
-import Link from "next/link";
+import {
+  INBOX_EDITABLE_STATUSES,
+  TASK_STATUS_LABELS,
+} from "@/lib/task-constants";
 import { redirect } from "next/navigation";
-import { addInboxTask, completeInboxTask, moveInboxTaskToProject } from "./actions";
+import {
+  addInboxTask,
+  completeInboxTask,
+  moveInboxTaskToProject,
+  updateInboxTaskStatus,
+} from "./actions";
 import { NativeSelect } from "@/components/ui/native-select";
+
+const INBOX_STATUS_OPTIONS = INBOX_EDITABLE_STATUSES.map((s) => ({
+  value: s,
+  label: TASK_STATUS_LABELS[s],
+}));
 
 export default async function InboxPage() {
   const session = await auth();
@@ -30,7 +43,7 @@ export default async function InboxPage() {
       <header>
         <h1 className="text-xl font-semibold">受信箱（Inbox）</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          未整理のタスク。会議中の即メモはここに置きます。編集は各行の「編集」から開きます。
+          未整理のタスク。一覧では状態だけ変えられます。タイトルやメモは「編集」から開きます。
         </p>
       </header>
 
@@ -73,19 +86,25 @@ export default async function InboxPage() {
                   <div className="min-w-0 space-y-1">
                     <p className="font-medium">{t.title}</p>
                     <p className="text-muted-foreground text-xs">
-                      {taskStatusLabel(t.status)}
-                      {t.dueOn ? ` · 〆 ${t.dueOn}` : ""}
+                      {t.dueOn ? `〆 ${t.dueOn}` : "〆切なし"}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/inbox/tasks/${t.id}/edit`}
-                      className={cn(
-                        buttonVariants({ variant: "secondary", size: "sm" }),
-                      )}
-                    >
-                      編集
-                    </Link>
+                    <TaskStatusInlineForm
+                      action={updateInboxTaskStatus.bind(null, t.id)}
+                      defaultStatus={t.status}
+                      options={INBOX_STATUS_OPTIONS}
+                      selectId={`inbox-status-${t.id}`}
+                    />
+                    <InboxTaskEditDialog
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                      }}
+                    />
                     {moveTargets.length > 0 ? (
                       <form
                         action={moveInboxTaskToProject.bind(null, t.id)}

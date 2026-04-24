@@ -12,13 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getInboxTaskForEdit } from "@/lib/inbox-task-edit";
-import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/task-constants";
+import {
+  INBOX_EDITABLE_STATUSES,
+  TASK_STATUS_LABELS,
+} from "@/lib/task-constants";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateInboxTask } from "@/app/inbox/actions";
-
-const INBOX_EDITABLE_STATUSES = TASK_STATUSES.filter((s) => s !== "done");
 
 function dueForInput(v: string | null | undefined): string {
   if (!v) {

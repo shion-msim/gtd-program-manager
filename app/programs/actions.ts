@@ -42,10 +42,13 @@ export async function createProgram(formData: FormData) {
   redirect("/programs?toast=created");
 }
 
-export async function updateProgram(programId: string, formData: FormData) {
+export async function updateProgram(
+  programId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const userId = session.user.id;
   const [existing] = await db
@@ -54,12 +57,12 @@ export async function updateProgram(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)))
     .limit(1);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const nameRaw = formData.get("name");
   const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
   if (name === "") {
-    return;
+    return { ok: false };
   }
   const startOn = parseOptionalDate(formData.get("startOn"));
   const endOn = parseOptionalDate(formData.get("endOn"));
@@ -74,8 +77,11 @@ export async function updateProgram(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
   revalidatePath(`/programs/${programId}`);
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  revalidatePath("/workload");
   revalidateAppShell();
-  redirect("/programs?toast=saved");
+  return { ok: true };
 }
 
 export async function deleteProgram(programId: string, formData: FormData) {

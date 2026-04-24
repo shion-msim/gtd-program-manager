@@ -50,19 +50,22 @@ export async function createProject(programId: string, formData: FormData) {
   redirect(`/programs/${programId}?toast=created`);
 }
 
-export async function updateProject(projectId: string, formData: FormData) {
+export async function updateProject(
+  projectId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const existing = await projectForUser(projectId, session.user.id);
   if (!existing || existing.isInbox) {
-    return;
+    return { ok: false };
   }
   const nameRaw = formData.get("name");
   const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
   if (name === "") {
-    return;
+    return { ok: false };
   }
   await db
     .update(projects)
@@ -73,10 +76,12 @@ export async function updateProject(projectId: string, formData: FormData) {
     .where(eq(projects.id, projectId));
   const programId = existing.programId;
   revalidatePath(`/programs/${programId}`);
+  revalidatePath(`/projects/${projectId}`);
   revalidatePath("/programs");
   revalidatePath("/inbox");
+  revalidatePath("/tasks");
   revalidateAppShell();
-  redirect(`/programs/${programId}?toast=saved`);
+  return { ok: true };
 }
 
 export async function deleteProject(projectId: string, formData: FormData) {

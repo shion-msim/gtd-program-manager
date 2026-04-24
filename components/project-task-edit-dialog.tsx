@@ -1,0 +1,163 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import {
+  deleteProjectTask,
+  updateProjectTaskStay,
+} from "@/app/projects/[id]/actions";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/task-constants";
+
+function dueForInput(v: string | null | undefined): string {
+  if (!v) {
+    return "";
+  }
+  return v.slice(0, 10);
+}
+
+export type ProjectTaskEditPayload = {
+  id: string;
+  title: string;
+  note: string | null;
+  dueOn: string | null;
+  status: string;
+};
+
+type Props = {
+  projectId: string;
+  task: ProjectTaskEditPayload;
+  triggerLabel?: string;
+  triggerVariant?: ComponentProps<typeof Button>["variant"];
+  triggerSize?: ComponentProps<typeof Button>["size"];
+};
+
+export function ProjectTaskEditDialog({
+  projectId,
+  task,
+  triggerLabel = "編集",
+  triggerVariant = "secondary",
+  triggerSize = "sm",
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button type="button" variant={triggerVariant} size={triggerSize}>
+            {triggerLabel}
+          </Button>
+        }
+      />
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>タスクを編集</DialogTitle>
+          <DialogDescription>
+            タイトル・メモ・〆切・状態を更新するか、削除できます。
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            startTransition(async () => {
+              const r = await updateProjectTaskStay(task.id, projectId, fd);
+              if (r.ok) {
+                toast.success("保存しました");
+                setOpen(false);
+              } else {
+                toast.error("保存できませんでした");
+              }
+            });
+          }}
+        >
+          <div className="space-y-2">
+            <Label htmlFor={`pt-dlg-title-${task.id}`}>タイトル</Label>
+            <Input
+              id={`pt-dlg-title-${task.id}`}
+              name="title"
+              type="text"
+              required
+              defaultValue={task.title}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`pt-dlg-note-${task.id}`}>メモ</Label>
+            <Textarea
+              id={`pt-dlg-note-${task.id}`}
+              name="note"
+              rows={4}
+              defaultValue={task.note ?? ""}
+            />
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-[10rem] flex-1 space-y-2">
+              <Label htmlFor={`pt-dlg-due-${task.id}`}>〆切</Label>
+              <Input
+                id={`pt-dlg-due-${task.id}`}
+                name="dueOn"
+                type="date"
+                defaultValue={dueForInput(task.dueOn ?? undefined)}
+              />
+            </div>
+            <div className="min-w-[10rem] flex-1 space-y-2">
+              <Label htmlFor={`pt-dlg-status-${task.id}`}>状態</Label>
+              <NativeSelect
+                id={`pt-dlg-status-${task.id}`}
+                name="status"
+                required
+                defaultValue={task.status}
+              >
+                {TASK_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {TASK_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          </div>
+          <DialogFooter className="flex-col gap-3 pt-2 sm:flex-col">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <DialogClose render={<Button type="button" variant="outline" size="sm" />}>
+                閉じる
+              </DialogClose>
+              <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+                {pending ? "保存中…" : "保存"}
+              </Button>
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-muted-foreground mb-2 text-xs font-medium">危険な操作</p>
+              <ConfirmDeleteForm
+                action={deleteProjectTask.bind(null, task.id, projectId)}
+                title="このタスクを削除しますか？"
+                description="削除すると元に戻せません。"
+                triggerLabel="削除"
+                confirmLabel="削除する"
+                triggerVariant="destructive"
+              />
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

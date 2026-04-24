@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { ProjectEditDialog } from "@/components/project-edit-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createProject, deleteProject, updateProject } from "./actions";
+import { createProject, deleteProject } from "./actions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -97,30 +98,17 @@ export default async function ProgramDetailPage({ params }: Props) {
                 ) : (
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <Link
-                        href={`/projects/${proj.id}`}
-                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        タスク一覧
-                      </Link>
-                    </div>
-                    <form action={updateProject.bind(null, proj.id)} className="flex flex-wrap items-end gap-2">
-                      <div className="min-w-0 flex-1">
-                        <Label htmlFor={`proj-name-${proj.id}`} className="sr-only">
-                          名前
-                        </Label>
-                        <Input
-                          id={`proj-name-${proj.id}`}
-                          name="name"
-                          type="text"
-                          required
-                          defaultValue={proj.name}
-                        />
+                      <p className="min-w-0 font-medium">{proj.name}</p>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <Link
+                          href={`/projects/${proj.id}`}
+                          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                        >
+                          タスク一覧
+                        </Link>
+                        <ProjectEditDialog project={{ id: proj.id, name: proj.name }} />
                       </div>
-                      <Button type="submit" size="sm" variant="secondary">
-                        保存
-                      </Button>
-                    </form>
+                    </div>
                     <ConfirmDeleteForm
                       action={deleteProject.bind(null, proj.id)}
                       title="このプロジェクトを削除しますか？"

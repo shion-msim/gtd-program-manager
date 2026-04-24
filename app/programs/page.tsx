@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { ProgramEditDialog } from "@/components/program-edit-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import {
@@ -16,14 +17,7 @@ import { programs } from "@/db/schema";
 import { getInboxProgramIdForUser } from "@/lib/inbox";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createProgram, deleteProgram, updateProgram } from "./actions";
-
-function formatDateForInput(v: string | null | undefined): string {
-  if (!v) {
-    return "";
-  }
-  return v.slice(0, 10);
-}
+import { createProgram, deleteProgram } from "./actions";
 
 export default async function ProgramsPage() {
   const session = await auth();
@@ -88,57 +82,22 @@ export default async function ProgramsPage() {
           {list.map((p) => (
             <li key={p.id}>
               <Card size="sm">
-                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 border-b pb-4">
-                  <div>
+                <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b pb-4">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="text-base font-semibold">{p.name}</CardTitle>
                     <p className="text-muted-foreground text-xs">
                       {p.startOn ? p.startOn : "（開始日なし）"} 〜{" "}
                       {p.endOn ? p.endOn : "（終了日なし）"}
                     </p>
                     <Link
                       href={`/programs/${p.id}`}
-                      className="text-primary mt-1 inline-block text-sm font-medium underline-offset-4 hover:underline"
+                      className="text-primary inline-block text-sm font-medium underline-offset-4 hover:underline"
                     >
                       プロジェクト一覧を開く
                     </Link>
                   </div>
+                  <ProgramEditDialog program={p} />
                 </CardHeader>
-                <CardContent className="space-y-3 pt-4">
-                  <form action={updateProgram.bind(null, p.id)} className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor={`program-name-${p.id}`}>名前</Label>
-                      <Input
-                        id={`program-name-${p.id}`}
-                        name="name"
-                        type="text"
-                        required
-                        defaultValue={p.name}
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      <div className="min-w-[10rem] flex-1 space-y-2">
-                        <Label htmlFor={`program-start-${p.id}`}>開始日</Label>
-                        <Input
-                          id={`program-start-${p.id}`}
-                          name="startOn"
-                          type="date"
-                          defaultValue={formatDateForInput(p.startOn ?? undefined)}
-                        />
-                      </div>
-                      <div className="min-w-[10rem] flex-1 space-y-2">
-                        <Label htmlFor={`program-end-${p.id}`}>終了日</Label>
-                        <Input
-                          id={`program-end-${p.id}`}
-                          name="endOn"
-                          type="date"
-                          defaultValue={formatDateForInput(p.endOn ?? undefined)}
-                        />
-                      </div>
-                    </div>
-                    <Button type="submit" size="sm" variant="secondary">
-                      保存
-                    </Button>
-                  </form>
-                </CardContent>
                 <CardFooter className="flex flex-col items-stretch gap-2 border-t">
                   {inboxProgramId === p.id ? (
                     <p className="text-muted-foreground text-xs leading-relaxed">
