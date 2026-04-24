@@ -1,5 +1,6 @@
 "use client";
 
+import { CornerDownLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -35,13 +36,14 @@ export function NewProgramSection() {
 
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="new-program-name">名前</Label>
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           ref={nameInputRef}
           id="new-program-name"
           type="text"
-          placeholder="例: 2026 Q2 イニシアチブ（入力後 Enter）"
+          className="min-w-0 flex-1"
+          placeholder="名前を入力"
+          aria-label="新規プログラム名"
           onKeyDown={(e) => {
             if (e.key !== "Enter") {
               return;
@@ -50,9 +52,17 @@ export function NewProgramSection() {
             openCreateDialog();
           }}
         />
-        <p className="text-muted-foreground text-xs">
-          名前を入力して Enter を押すと編集ダイアログが開き、開始日・終了日を指定してから作成できます。
-        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon-sm"
+          className="shrink-0"
+          aria-label="確定（Enter と同じ）"
+          title="確定（Enter と同じ）"
+          onClick={() => openCreateDialog()}
+        >
+          <CornerDownLeft className="size-4" aria-hidden />
+        </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

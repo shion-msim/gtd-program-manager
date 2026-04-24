@@ -32,9 +32,24 @@ export type ProgramEditFields = {
   endOn: string | null;
 };
 
-export function ProgramEditDialog({ program }: { program: ProgramEditFields }) {
+export function ProgramEditDialog({
+  program,
+  disabled = false,
+}: {
+  program: ProgramEditFields;
+  /** 受信箱プログラムなど編集不可のとき true */
+  disabled?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  if (disabled) {
+    return (
+      <Button type="button" variant="secondary" size="icon-sm" aria-label="編集" disabled>
+        <Pencil />
+      </Button>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
