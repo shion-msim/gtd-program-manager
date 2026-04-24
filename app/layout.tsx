@@ -39,6 +39,7 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
+          storage="local"
         >
           <MainChrome>{children}</MainChrome>
           <Suspense fallback={null}>

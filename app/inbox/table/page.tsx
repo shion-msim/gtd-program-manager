@@ -6,6 +6,7 @@ import {
   getInboxOpenTasksForUser,
   getNonInboxProjectsForUser,
 } from "@/lib/inbox-tasks";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -16,9 +17,10 @@ export default async function InboxTablePage() {
   }
   const userId = session.user.id;
   await ensureInboxForUser(userId);
-  const [{ projectId, rows }, moveTargets] = await Promise.all([
+  const [{ projectId, rows }, moveTargets, priorityColors] = await Promise.all([
     getInboxOpenTasksForUser(userId),
     getNonInboxProjectsForUser(userId),
+    getPriorityColorsForUser(userId),
   ]);
 
   return (
@@ -45,7 +47,12 @@ export default async function InboxTablePage() {
           <section className="max-w-3xl">
             <InboxQuickAdd returnPath="/inbox/table" />
           </section>
-          <InboxTasksTable rows={rows} moveTargets={moveTargets} returnPath="/inbox/table" />
+          <InboxTasksTable
+            rows={rows}
+            moveTargets={moveTargets}
+            returnPath="/inbox/table"
+            priorityColors={priorityColors}
+          />
         </>
       )}
     </div>

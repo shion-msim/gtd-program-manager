@@ -9,6 +9,7 @@ import { projects, tasks } from "@/db/schema";
 import { getInboxProjectId } from "@/lib/inbox";
 import { parseInboxReturnPath } from "@/lib/inbox-return-path";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
+import { isTaskPriority } from "@/lib/task-priority";
 import { isTaskStatus } from "@/lib/task-constants";
 
 function revalidateInboxRelated(taskId?: string) {
@@ -109,6 +110,10 @@ async function applyInboxTaskFields(
   if (statusRaw === "done") {
     return { ok: false };
   }
+  const priorityRaw = formData.get("priority");
+  if (typeof priorityRaw !== "string" || !isTaskPriority(priorityRaw)) {
+    return { ok: false };
+  }
   await db
     .update(tasks)
     .set({
@@ -116,6 +121,7 @@ async function applyInboxTaskFields(
       ...(note !== undefined ? { note } : {}),
       ...(dueOn !== undefined ? { dueOn } : {}),
       status: statusRaw,
+      priority: priorityRaw,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));

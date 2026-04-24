@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/task-constants";
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 
 function dueForInput(v: string | null | undefined): string {
   if (!v) {
@@ -38,6 +39,7 @@ export type ProjectTaskEditPayload = {
   note: string | null;
   dueOn: string | null;
   status: string;
+  priority: string;
 };
 
 type Props = {
@@ -130,6 +132,21 @@ export function ProjectTaskEditDialog({
                 {TASK_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {TASK_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="min-w-[10rem] flex-1 space-y-2">
+              <Label htmlFor={`pt-dlg-prio-${task.id}`}>優先度</Label>
+              <NativeSelect
+                id={`pt-dlg-prio-${task.id}`}
+                name="priority"
+                required
+                defaultValue={task.priority}
+              >
+                {TASK_PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {TASK_PRIORITY_LABELS[p]}
                   </option>
                 ))}
               </NativeSelect>

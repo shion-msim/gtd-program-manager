@@ -4,8 +4,14 @@ import { auth } from "@/auth";
 import { InboxTaskEditDialog } from "@/components/inbox-task-edit-dialog";
 import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
 import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { ensureInboxForUser } from "@/lib/inbox";
 import { getOpenTasksListRowsForUser } from "@/lib/cross-project-views";
+import {
+  getPriorityColorsForUser,
+  priorityStripeColor,
+  resolveTaskEntityAccent,
+} from "@/lib/user-priority-colors";
 import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUSES,
@@ -30,7 +36,10 @@ export default async function TasksIndexPage() {
   }
   const userId = session.user.id;
   await ensureInboxForUser(userId);
-  const rows = await getOpenTasksListRowsForUser(userId);
+  const [rows, priorityColors] = await Promise.all([
+    getOpenTasksListRowsForUser(userId),
+    getPriorityColorsForUser(userId),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -48,11 +57,21 @@ export default async function TasksIndexPage() {
           className="divide-border divide-y rounded-lg border text-sm"
           data-testid="tasks-index-list"
         >
-          {rows.map((row) => (
-            <li
-              key={row.taskId}
-              className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
+          {rows.map((row) => {
+            const entityColor = resolveTaskEntityAccent(
+              row.projectAccent,
+              row.programAccent,
+            );
+            const priorityColor = priorityStripeColor(row.priority, priorityColors);
+            return (
+            <li key={row.taskId} className="min-w-0">
+              <ListRowEdgeAccent
+                as="div"
+                entityColor={entityColor}
+                priorityColor={priorityColor}
+                className="text-sm"
+              >
+              <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
                 <p className="font-medium">{row.title}</p>
                 <p className="text-muted-foreground text-xs">
@@ -76,6 +95,7 @@ export default async function TasksIndexPage() {
                         note: row.note,
                         dueOn: row.dueOn,
                         status: row.status,
+                        priority: row.priority,
                       }}
                     />
                   </>
@@ -99,13 +119,17 @@ export default async function TasksIndexPage() {
                         note: row.note,
                         dueOn: row.dueOn,
                         status: row.status,
+                        priority: row.priority,
                       }}
                     />
                   </>
                 )}
               </div>
+              </div>
+              </ListRowEdgeAccent>
             </li>
-          ))}
+          );
+          })}
         </ul>
       )}
     </div>

@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { parseOptionalHexColor } from "@/lib/hex-color";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 async function projectForUser(projectId: string, userId: string) {
@@ -67,10 +68,15 @@ export async function updateProject(
   if (name === "") {
     return { ok: false };
   }
+  const clearAccent = formData.get("clearAccent") === "on";
+  const accentColor = clearAccent
+    ? null
+    : parseOptionalHexColor(formData.get("accentColor"));
   await db
     .update(projects)
     .set({
       name,
+      accentColor,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));

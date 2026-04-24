@@ -9,6 +9,8 @@ import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import { normalizeHexColor } from "@/lib/hex-color";
 import { createProject, deleteProject } from "./actions";
 
 type Props = { params: Promise<{ id: string }> };
@@ -79,7 +81,18 @@ export default async function ProgramDetailPage({ params }: Props) {
         ) : (
           <ul className="divide-border divide-y rounded-lg border" data-testid="program-projects-list">
             {projectRows.map((proj) => (
-              <li key={proj.id} className="space-y-3 p-4">
+              <li key={proj.id} className="flex min-w-0">
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={
+                    proj.accentColor
+                      ? normalizeHexColor(proj.accentColor)
+                      : null
+                  }
+                  priorityColor={null}
+                  className="min-w-0 flex-1"
+                >
+                  <div className="space-y-3 p-4">
                 {proj.isInbox ? (
                   <div>
                     <p className="font-medium">{proj.name}</p>
@@ -106,7 +119,13 @@ export default async function ProgramDetailPage({ params }: Props) {
                         >
                           タスク一覧
                         </Link>
-                        <ProjectEditDialog project={{ id: proj.id, name: proj.name }} />
+                        <ProjectEditDialog
+                          project={{
+                            id: proj.id,
+                            name: proj.name,
+                            accentColor: proj.accentColor,
+                          }}
+                        />
                       </div>
                     </div>
                     <ConfirmDeleteForm
@@ -119,6 +138,8 @@ export default async function ProgramDetailPage({ params }: Props) {
                     />
                   </>
                 )}
+                  </div>
+                </ListRowEdgeAccent>
               </li>
             ))}
           </ul>

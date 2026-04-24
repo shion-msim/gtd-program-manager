@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 export type ProjectEditFields = {
   id: string;
   name: string;
+  accentColor: string | null;
 };
 
 export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
@@ -65,6 +66,23 @@ export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
               required
               defaultValue={project.name}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`dlg-project-accent-${project.id}`}>カード左端の色</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                id={`dlg-project-accent-${project.id}`}
+                name="accentColor"
+                type="color"
+                defaultValue={project.accentColor ?? "#94a3b8"}
+                className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
+                aria-label="アクセント色"
+              />
+              <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
+                <input type="checkbox" name="clearAccent" className="size-4 rounded border" />
+                色を使わない
+              </label>
+            </div>
           </div>
           <DialogFooter className="pt-2">
             <DialogClose render={<Button type="button" variant="outline" size="sm" />}>

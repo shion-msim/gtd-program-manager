@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { ensureInboxForUser } from "@/lib/inbox";
+import { resolveTaskEntityAccent } from "@/lib/user-priority-colors";
 import { getProjectsListRowsForUser } from "@/lib/cross-project-views";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -57,14 +59,25 @@ export default async function ProjectsIndexPage() {
                   const href = row.isInbox ? "/inbox" : `/projects/${row.projectId}`;
                   const suffix = row.isInbox ? "（受信箱）" : null;
                   return (
-                    <li key={row.projectId} className="px-3 py-3">
-                      <Link
-                        href={href}
-                        className="text-primary font-medium underline-offset-4 hover:underline"
+                    <li key={row.projectId} className="min-w-0">
+                      <ListRowEdgeAccent
+                        as="div"
+                        entityColor={resolveTaskEntityAccent(
+                          row.projectAccent,
+                          row.programAccent,
+                        )}
+                        priorityColor={null}
                       >
-                        {row.projectName}
-                        {suffix}
-                      </Link>
+                        <div className="px-3 py-3">
+                          <Link
+                            href={href}
+                            className="text-primary font-medium underline-offset-4 hover:underline"
+                          >
+                            {row.projectName}
+                            {suffix}
+                          </Link>
+                        </div>
+                      </ListRowEdgeAccent>
                     </li>
                   );
                 })}

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { programs } from "@/db/schema";
+import { normalizeHexColor } from "@/lib/hex-color";
 import { getInboxProgramIdForUser } from "@/lib/inbox";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -57,9 +58,19 @@ export default async function ProgramsPage() {
         <ul className="space-y-4" data-testid="programs-list">
           {sortedPrograms.map((p) => {
             const isInboxProgram = inboxProgramId === p.id;
+            const accent =
+              p.accentColor !== null && p.accentColor !== undefined
+                ? normalizeHexColor(p.accentColor)
+                : null;
             return (
               <li key={p.id}>
-                <Card size="sm">
+                <div className="flex overflow-hidden rounded-xl ring-1 ring-foreground/10">
+                  <div
+                    className="w-1.5 shrink-0 self-stretch bg-muted-foreground/25"
+                    style={accent ? { backgroundColor: accent } : undefined}
+                    aria-hidden
+                  />
+                  <Card size="sm" className="flex-1 rounded-none border-0 shadow-none ring-0">
                   <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b pb-4">
                     <div className="min-w-0 flex-1 space-y-1">
                       <Link
@@ -75,7 +86,16 @@ export default async function ProgramsPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-start justify-end gap-1">
-                      <ProgramEditDialog program={p} disabled={isInboxProgram} />
+                      <ProgramEditDialog
+                        program={{
+                          id: p.id,
+                          name: p.name,
+                          startOn: p.startOn,
+                          endOn: p.endOn,
+                          accentColor: p.accentColor,
+                        }}
+                        disabled={isInboxProgram}
+                      />
                       <ProgramDeleteWithHint
                         programId={p.id}
                         action={deleteProgram.bind(null, p.id)}
@@ -98,7 +118,8 @@ export default async function ProgramsPage() {
                       />
                     </div>
                   </CardHeader>
-                </Card>
+                  </Card>
+                </div>
               </li>
             );
           })}

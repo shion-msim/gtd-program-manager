@@ -10,13 +10,16 @@ import {
 } from "@/components/ui/card";
 import { redirect } from "next/navigation";
 import { signOutAction } from "@/app/dashboard/actions";
+import { SettingsPriorityColorsForm } from "@/components/settings-priority-colors-form";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
   const u = session.user;
+  const priorityColors = await getPriorityColorsForUser(session.user.id);
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
       <header>
@@ -40,6 +43,18 @@ export default async function SettingsPage() {
             <span className="text-muted-foreground">メール: </span>
             {u.email ?? "—"}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>タスク優先度の色</CardTitle>
+          <CardDescription>
+            タスク一覧などの左端に表示する優先度ごとの色です。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SettingsPriorityColorsForm colors={priorityColors} />
         </CardContent>
       </Card>
 

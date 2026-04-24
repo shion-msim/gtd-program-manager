@@ -21,6 +21,9 @@ import {
 
 const DEFAULT_TZ = "Asia/Tokyo";
 
+/** ダッシュボード受信箱セクションの一覧表示上限（超過分は整理ビューへ誘導） */
+const INBOX_TASKS_DASHBOARD_LIMIT = 50;
+
 export function getDefaultTimeZone() {
   return DEFAULT_TZ;
 }
@@ -83,7 +86,15 @@ export async function getWorkloadForUser(
 export type WorkloadViewBucket = Awaited<
   ReturnType<typeof getWorkloadForUser>
 >["buckets"][number] & {
-  tasks: { id: string; title: string; dueOn: string | null; projectId: string }[];
+  tasks: {
+    id: string;
+    title: string;
+    dueOn: string | null;
+    projectId: string;
+    priority: string;
+    projectAccent: string | null;
+    programAccent: string | null;
+  }[];
 };
 
 /** 週次負荷画面用: 件数＋週内タスクの抜粋 */
@@ -95,7 +106,15 @@ export async function getWorkloadViewForUser(
   const allIds = w.buckets.flatMap((b) => b.taskIds);
   let tasksById: Record<
     string,
-    { id: string; title: string; dueOn: string | null; projectId: string }
+    {
+      id: string;
+      title: string;
+      dueOn: string | null;
+      projectId: string;
+      priority: string;
+      projectAccent: string | null;
+      programAccent: string | null;
+    }
   > = {};
   if (allIds.length > 0) {
     const rows = await db
@@ -104,8 +123,13 @@ export async function getWorkloadViewForUser(
         title: tasks.title,
         dueOn: tasks.dueOn,
         projectId: tasks.projectId,
+        priority: tasks.priority,
+        projectAccent: projects.accentColor,
+        programAccent: programs.accentColor,
       })
       .from(tasks)
+      .innerJoin(projects, eq(tasks.projectId, projects.id))
+      .innerJoin(programs, eq(projects.programId, programs.id))
       .where(inArray(tasks.id, allIds));
     tasksById = Object.fromEntries(rows.map((r) => [r.id, r]));
   }
@@ -119,6 +143,9 @@ export async function getWorkloadViewForUser(
           title: t?.title ?? "（表示できません）",
           dueOn: t?.dueOn ?? null,
           projectId: t?.projectId ?? "",
+          priority: t?.priority ?? "none",
+          projectAccent: t?.projectAccent ?? null,
+          programAccent: t?.programAccent ?? null,
         };
       })
       .sort((a, b) => {
@@ -158,10 +185,43 @@ export async function getSummaryForUser(
     );
   const inboxCount = inboxRow?.n ?? 0;
 
-  const dueToday = await db
-    .select({ task: tasks })
+  const inboxTasks = await db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      programId: programs.id,
+      priority: tasks.priority,
+      projectAccent: projects.accentColor,
+      programAccent: programs.accentColor,
+      projectName: projects.name,
+      programName: programs.name,
+    })
     .from(tasks)
     .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(programs, eq(projects.programId, programs.id))
+    .where(
+      and(
+        eq(projects.userId, userId),
+        eq(projects.isInbox, true),
+        eq(tasks.status, "inbox"),
+      ),
+    )
+    .orderBy(desc(tasks.createdAt))
+    .limit(INBOX_TASKS_DASHBOARD_LIMIT);
+
+  const dueTodayRows = await db
+    .select({
+      task: tasks,
+      programId: programs.id,
+      projectAccent: projects.accentColor,
+      programAccent: programs.accentColor,
+      projectName: projects.name,
+      programName: programs.name,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(programs, eq(projects.programId, programs.id))
     .where(
       and(
         eq(projects.userId, userId),
@@ -172,10 +232,18 @@ export async function getSummaryForUser(
     .orderBy(desc(tasks.dueOn))
     .limit(3);
 
-  const nextActions = await db
-    .select({ task: tasks })
+  const nextActionRows = await db
+    .select({
+      task: tasks,
+      programId: programs.id,
+      projectAccent: projects.accentColor,
+      programAccent: programs.accentColor,
+      projectName: projects.name,
+      programName: programs.name,
+    })
     .from(tasks)
     .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(programs, eq(projects.programId, programs.id))
     .where(
       and(eq(projects.userId, userId), eq(tasks.status, "next")),
     )
@@ -219,8 +287,23 @@ export async function getSummaryForUser(
     timeZone: timeZone,
     todayYmd,
     inboxCount,
-    dueToday: dueToday.map((r) => r.task),
-    nextActions: nextActions.map((r) => r.task),
+    inboxTasks,
+    dueToday: dueTodayRows.map((r) => ({
+      ...r.task,
+      programId: r.programId,
+      projectAccent: r.projectAccent,
+      programAccent: r.programAccent,
+      projectName: r.projectName,
+      programName: r.programName,
+    })),
+    nextActions: nextActionRows.map((r) => ({
+      ...r.task,
+      programId: r.programId,
+      projectAccent: r.projectAccent,
+      programAccent: r.programAccent,
+      projectName: r.projectName,
+      programName: r.programName,
+    })),
     dueNext7DaysCount: dueNext7Count,
     activePrograms,
   };

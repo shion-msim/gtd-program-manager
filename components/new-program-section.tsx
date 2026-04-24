@@ -112,6 +112,23 @@ export function NewProgramSection() {
                 <Input id="new-program-dialog-end" name="endOn" type="date" />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-program-dialog-accent">カード左端の色（任意）</Label>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  id="new-program-dialog-accent"
+                  name="accentColor"
+                  type="color"
+                  defaultValue="#94a3b8"
+                  className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
+                  aria-label="アクセント色"
+                />
+                <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
+                  <input type="checkbox" name="clearAccent" className="size-4 rounded border" />
+                  色を使わない
+                </label>
+              </div>
+            </div>
             <DialogFooter className="pt-2">
               <DialogClose render={<Button type="button" variant="outline" size="sm" />}>
                 キャンセル

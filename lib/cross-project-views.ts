@@ -8,6 +8,8 @@ export type ProjectListRow = {
   isInbox: boolean;
   programId: string;
   programName: string;
+  projectAccent: string | null;
+  programAccent: string | null;
 };
 
 export async function getProjectsListRowsForUser(
@@ -20,6 +22,8 @@ export async function getProjectsListRowsForUser(
       isInbox: projects.isInbox,
       programId: programs.id,
       programName: programs.name,
+      projectAccent: projects.accentColor,
+      programAccent: programs.accentColor,
     })
     .from(projects)
     .innerJoin(programs, eq(projects.programId, programs.id))
@@ -33,10 +37,13 @@ export type OpenTaskListRow = {
   status: string;
   dueOn: string | null;
   note: string | null;
+  priority: string;
   projectId: string;
   projectName: string;
   isInbox: boolean;
   programName: string;
+  projectAccent: string | null;
+  programAccent: string | null;
 };
 
 export async function getOpenTasksListRowsForUser(
@@ -50,10 +57,13 @@ export async function getOpenTasksListRowsForUser(
       status: tasks.status,
       dueOn: tasks.dueOn,
       note: tasks.note,
+      priority: tasks.priority,
       projectId: projects.id,
       projectName: projects.name,
       isInbox: projects.isInbox,
       programName: programs.name,
+      projectAccent: projects.accentColor,
+      programAccent: programs.accentColor,
     })
     .from(tasks)
     .innerJoin(projects, eq(tasks.projectId, projects.id))

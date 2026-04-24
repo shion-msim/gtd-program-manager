@@ -23,6 +23,7 @@ import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUS_LABELS,
 } from "@/lib/task-constants";
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 
 function dueForInput(v: string | null | undefined): string {
   if (!v) {
@@ -37,6 +38,7 @@ export type InboxTaskEditPayload = {
   note: string | null;
   dueOn: string | null;
   status: string;
+  priority: string;
 };
 
 type Props = {
@@ -125,6 +127,21 @@ export function InboxTaskEditDialog({
                 {INBOX_EDITABLE_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {TASK_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="min-w-[10rem] flex-1 space-y-2">
+              <Label htmlFor={`ib-dlg-prio-${task.id}`}>優先度</Label>
+              <NativeSelect
+                id={`ib-dlg-prio-${task.id}`}
+                name="priority"
+                required
+                defaultValue={task.priority}
+              >
+                {TASK_PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {TASK_PRIORITY_LABELS[p]}
                   </option>
                 ))}
               </NativeSelect>

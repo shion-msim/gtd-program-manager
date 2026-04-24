@@ -6,6 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { parseOptionalHexColor } from "@/lib/hex-color";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 function parseOptionalDate(raw: FormDataEntryValue | null): string | null {
@@ -33,6 +34,10 @@ export async function createProgram(
   }
   const startOn = parseOptionalDate(formData.get("startOn"));
   const endOn = parseOptionalDate(formData.get("endOn"));
+  const clearAccent = formData.get("clearAccent") === "on";
+  const accentColor = clearAccent
+    ? null
+    : parseOptionalHexColor(formData.get("accentColor"));
   const [row] = await db
     .insert(programs)
     .values({
@@ -40,6 +45,7 @@ export async function createProgram(
       name,
       startOn,
       endOn,
+      accentColor,
     })
     .returning({ id: programs.id });
   if (!row) {
@@ -74,12 +80,17 @@ export async function updateProgram(
   }
   const startOn = parseOptionalDate(formData.get("startOn"));
   const endOn = parseOptionalDate(formData.get("endOn"));
+  const clearAccent = formData.get("clearAccent") === "on";
+  const accentColor = clearAccent
+    ? null
+    : parseOptionalHexColor(formData.get("accentColor"));
   await db
     .update(programs)
     .set({
       name,
       startOn,
       endOn,
+      accentColor,
       updatedAt: new Date(),
     })
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));

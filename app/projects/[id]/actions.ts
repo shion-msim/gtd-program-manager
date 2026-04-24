@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
+import { isTaskPriority } from "@/lib/task-priority";
 import { isTaskStatus } from "@/lib/task-constants";
 
 function revalidateTaskSurfaces(
@@ -125,6 +126,10 @@ async function applyProjectTaskFields(
   if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
     return { ok: false };
   }
+  const priorityRaw = formData.get("priority");
+  if (typeof priorityRaw !== "string" || !isTaskPriority(priorityRaw)) {
+    return { ok: false };
+  }
   await db
     .update(tasks)
     .set({
@@ -132,6 +137,7 @@ async function applyProjectTaskFields(
       ...(note !== undefined ? { note } : {}),
       ...(dueOn !== undefined ? { dueOn } : {}),
       status: statusRaw,
+      priority: priorityRaw,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));

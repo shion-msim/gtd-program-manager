@@ -16,6 +16,12 @@ import {
   updateProjectTaskStatus,
 } from "./actions";
 import { NativeSelect } from "@/components/ui/native-select";
+import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import {
+  getPriorityColorsForUser,
+  priorityStripeColor,
+  resolveTaskEntityAccent,
+} from "@/lib/user-priority-colors";
 
 const PROJECT_TASK_STATUS_OPTIONS = TASK_STATUSES.map((s) => ({
   value: s,
@@ -50,7 +56,7 @@ export default async function ProjectTasksPage({ params }: Props) {
     redirect("/inbox");
   }
 
-  const [openRows, doneRows, moveTargets] = await Promise.all([
+  const [openRows, doneRows, moveTargets, priorityColors] = await Promise.all([
     db
       .select()
       .from(tasks)
@@ -63,6 +69,7 @@ export default async function ProjectTasksPage({ params }: Props) {
       .orderBy(desc(tasks.updatedAt))
       .limit(40),
     getOtherProjectsForMove(userId, projectId),
+    getPriorityColorsForUser(userId),
   ]);
 
   return (
@@ -121,13 +128,21 @@ export default async function ProjectTasksPage({ params }: Props) {
             className="divide-border border-border divide-y rounded-lg border"
             data-testid="project-tasks-open"
           >
-            {openRows.map((t) => (
-              <li
-                key={t.id}
-                id={`task-${t.id}`}
-                className="flex flex-col gap-3 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-                data-task-title={t.title}
-              >
+            {openRows.map((t) => {
+              const entityColor = resolveTaskEntityAccent(
+                ctx.project.accentColor,
+                ctx.program.accentColor,
+              );
+              const priorityColor = priorityStripeColor(t.priority, priorityColors);
+              return (
+              <li key={t.id} id={`task-${t.id}`} className="min-w-0" data-task-title={t.title}>
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={entityColor}
+                  priorityColor={priorityColor}
+                  className="text-sm"
+                >
+                <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 space-y-1">
                   <p className="font-medium">{t.title}</p>
                   <p className="text-muted-foreground text-xs">
@@ -149,6 +164,7 @@ export default async function ProjectTasksPage({ params }: Props) {
                       note: t.note,
                       dueOn: t.dueOn,
                       status: t.status,
+                      priority: t.priority,
                     }}
                   />
                   {moveTargets.length > 0 ? (
@@ -181,8 +197,11 @@ export default async function ProjectTasksPage({ params }: Props) {
                     </form>
                   ) : null}
                 </div>
+                </div>
+                </ListRowEdgeAccent>
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
       </section>
@@ -191,9 +210,20 @@ export default async function ProjectTasksPage({ params }: Props) {
         <section className="space-y-3">
           <h2 className="text-sm font-medium">完了（直近）</h2>
           <ul className="divide-border border-border divide-y rounded-lg border text-sm">
-            {doneRows.map((t) => (
-              <li key={t.id} id={`task-${t.id}`} className="px-3 py-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {doneRows.map((t) => {
+              const entityColor = resolveTaskEntityAccent(
+                ctx.project.accentColor,
+                ctx.program.accentColor,
+              );
+              const priorityColor = priorityStripeColor(t.priority, priorityColors);
+              return (
+              <li key={t.id} id={`task-${t.id}`} className="min-w-0">
+                <ListRowEdgeAccent
+                  as="div"
+                  entityColor={entityColor}
+                  priorityColor={priorityColor}
+                >
+                <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0 space-y-1">
                     <p className="text-muted-foreground line-through">{t.title}</p>
                     <p className="text-muted-foreground text-xs">
@@ -215,14 +245,17 @@ export default async function ProjectTasksPage({ params }: Props) {
                         note: t.note,
                         dueOn: t.dueOn,
                         status: t.status,
+                        priority: t.priority,
                       }}
                       triggerLabel="詳細"
                       triggerVariant="outline"
                     />
                   </div>
                 </div>
+                </ListRowEdgeAccent>
               </li>
-            ))}
+            );
+            })}
           </ul>
         </section>
       ) : null}

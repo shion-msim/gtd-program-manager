@@ -7,8 +7,9 @@ import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUS_LABELS,
 } from "@/lib/task-constants";
-import type { InferSelectModel } from "drizzle-orm";
-import type { tasks } from "@/db/schema";
+import type { InboxOpenTaskRow } from "@/lib/inbox-tasks";
+import type { PriorityColorMap } from "@/lib/user-priority-colors";
+import { priorityStripeColor, resolveTaskEntityAccent } from "@/lib/user-priority-colors";
 import {
   completeInboxTask,
   moveInboxTaskToProject,
@@ -20,8 +21,6 @@ const INBOX_STATUS_OPTIONS = INBOX_EDITABLE_STATUSES.map((s) => ({
   label: TASK_STATUS_LABELS[s],
 }));
 
-type TaskRow = InferSelectModel<typeof tasks>;
-
 type MoveTarget = {
   projectId: string;
   programName: string;
@@ -32,10 +31,12 @@ export function InboxTasksTable({
   rows,
   moveTargets,
   returnPath,
+  priorityColors,
 }: {
-  rows: TaskRow[];
+  rows: InboxOpenTaskRow[];
   moveTargets: MoveTarget[];
   returnPath: InboxReturnPath;
+  priorityColors: PriorityColorMap;
 }) {
   if (rows.length === 0) {
     return (
@@ -50,6 +51,7 @@ export function InboxTasksTable({
       <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
         <thead>
           <tr className="bg-muted/80 border-b text-xs font-medium tracking-wide text-muted-foreground">
+            <th scope="col" className="w-0 p-0 font-medium" aria-label="色" />
             <th scope="col" className="px-3 py-2.5 font-medium">
               タイトル
             </th>
@@ -68,8 +70,30 @@ export function InboxTasksTable({
           </tr>
         </thead>
         <tbody className="divide-border divide-y">
-          {rows.map((t) => (
+          {rows.map((t) => {
+            const entityColor = resolveTaskEntityAccent(
+              t.projectAccent,
+              t.programAccent,
+            );
+            const pColor = priorityStripeColor(t.priority, priorityColors);
+            return (
             <tr key={t.id} className="align-middle" data-task-title={t.title}>
+              <td className="w-0 p-0 align-stretch">
+                <div className="flex h-full min-h-[2.75rem]" aria-hidden>
+                  <span
+                    className="w-1.5 self-stretch bg-muted-foreground/25"
+                    style={
+                      entityColor ? { backgroundColor: entityColor } : undefined
+                    }
+                  />
+                  {pColor ? (
+                    <span
+                      className="w-1 self-stretch"
+                      style={{ backgroundColor: pColor }}
+                    />
+                  ) : null}
+                </div>
+              </td>
               <td className="max-w-[20rem] px-3 py-2">
                 <p className="font-medium leading-snug">{t.title}</p>
               </td>
@@ -127,6 +151,7 @@ export function InboxTasksTable({
                       note: t.note,
                       dueOn: t.dueOn,
                       status: t.status,
+                      priority: t.priority,
                     }}
                   />
                   <form action={completeInboxTask.bind(null, t.id)}>
@@ -138,7 +163,8 @@ export function InboxTasksTable({
                 </div>
               </td>
             </tr>
-          ))}
+          );
+          })}
         </tbody>
       </table>
     </div>

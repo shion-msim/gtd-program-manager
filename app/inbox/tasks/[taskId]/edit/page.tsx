@@ -16,6 +16,7 @@ import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUS_LABELS,
 } from "@/lib/task-constants";
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -101,6 +102,21 @@ export default async function InboxTaskEditPage({ params }: Props) {
                   {INBOX_EDITABLE_STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {TASK_STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="min-w-[10rem] flex-1 space-y-2">
+                <Label htmlFor="priority">優先度</Label>
+                <NativeSelect
+                  id="priority"
+                  name="priority"
+                  required
+                  defaultValue={task.priority}
+                >
+                  {TASK_PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {TASK_PRIORITY_LABELS[p]}
                     </option>
                   ))}
                 </NativeSelect>
