@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -18,6 +18,9 @@ type Props = {
   title: string;
   description?: string;
   triggerLabel?: string;
+  /** アイコンなど。指定時は `triggerLabel` より優先され、`size` は icon 系に固定されます。 */
+  triggerContent?: ReactNode;
+  triggerAriaLabel?: string;
   confirmLabel?: string;
   triggerVariant?: ComponentProps<typeof Button>["variant"];
 };
@@ -27,18 +30,26 @@ export function ConfirmDeleteForm({
   title,
   description = "この操作は元に戻せません。",
   triggerLabel = "削除",
+  triggerContent,
+  triggerAriaLabel,
   confirmLabel = "削除する",
   triggerVariant = "outline",
 }: Props) {
+  const triggerButton = (
+    <Button
+      type="button"
+      variant={triggerVariant}
+      size={triggerContent ? "icon-sm" : "sm"}
+      aria-label={
+        triggerContent ? (triggerAriaLabel ?? (typeof triggerLabel === "string" ? triggerLabel : "削除")) : undefined
+      }
+    >
+      {triggerContent ?? triggerLabel}
+    </Button>
+  );
   return (
     <AlertDialog>
-      <AlertDialogTrigger
-        render={
-          <Button type="button" variant={triggerVariant} size="sm">
-            {triggerLabel}
-          </Button>
-        }
-      />
+      <AlertDialogTrigger render={triggerButton} />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

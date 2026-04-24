@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
+import { NewProgramSection } from "@/components/new-program-section";
+import { ProgramDeleteWithHint } from "@/components/program-delete-with-hint";
 import { ProgramEditDialog } from "@/components/program-edit-dialog";
-import { Button } from "@/components/ui/button";
-import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import {
   Card,
   CardContent,
@@ -9,15 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { programs } from "@/db/schema";
 import { getInboxProgramIdForUser } from "@/lib/inbox";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createProgram, deleteProgram } from "./actions";
+import { deleteProgram } from "./actions";
 
 export default async function ProgramsPage() {
   const session = await auth();
@@ -47,31 +45,7 @@ export default async function ProgramsPage() {
           <CardTitle>新規プログラム</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createProgram} className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="new-program-name">名前（必須）</Label>
-              <Input
-                id="new-program-name"
-                name="name"
-                type="text"
-                required
-                placeholder="例: 2026 Q2 イニシアチブ"
-              />
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="min-w-[10rem] flex-1 space-y-2">
-                <Label htmlFor="new-start">開始日</Label>
-                <Input id="new-start" name="startOn" type="date" />
-              </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
-                <Label htmlFor="new-end">終了日</Label>
-                <Input id="new-end" name="endOn" type="date" />
-              </div>
-            </div>
-            <Button type="submit" size="sm">
-              作成
-            </Button>
-          </form>
+          <NewProgramSection />
         </CardContent>
       </Card>
 
@@ -83,23 +57,28 @@ export default async function ProgramsPage() {
             <li key={p.id}>
               <Card size="sm">
                 <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b pb-4">
-                  <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-base font-semibold">{p.name}</CardTitle>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Link
+                      href={`/programs/${p.id}`}
+                      title="プロジェクト一覧を開く"
+                      className="text-foreground block rounded-md outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <CardTitle className="text-base font-semibold">{p.name}</CardTitle>
+                    </Link>
                     <p className="text-muted-foreground text-xs">
                       {p.startOn ? p.startOn : "（開始日なし）"} 〜{" "}
                       {p.endOn ? p.endOn : "（終了日なし）"}
                     </p>
-                    <Link
-                      href={`/programs/${p.id}`}
-                      className="text-primary inline-block text-sm font-medium underline-offset-4 hover:underline"
-                    >
-                      プロジェクト一覧を開く
-                    </Link>
                   </div>
-                  <ProgramEditDialog program={p} />
+                  <div className="flex shrink-0 flex-wrap items-start justify-end gap-1">
+                    <ProgramEditDialog program={p} />
+                    {inboxProgramId !== p.id ? (
+                      <ProgramDeleteWithHint programId={p.id} action={deleteProgram.bind(null, p.id)} />
+                    ) : null}
+                  </div>
                 </CardHeader>
-                <CardFooter className="flex flex-col items-stretch gap-2 border-t">
-                  {inboxProgramId === p.id ? (
+                {inboxProgramId === p.id ? (
+                  <CardFooter className="flex flex-col items-stretch gap-2 border-t">
                     <p className="text-muted-foreground text-xs leading-relaxed">
                       このプログラムには受信箱（Inbox）用のプロジェクトが常に含まれるため、子プロジェクトを
                       0 件にすることはできず、削除もできません。未整理タスクの整理は
@@ -108,25 +87,8 @@ export default async function ProgramsPage() {
                       </Link>
                       から行えます。
                     </p>
-                  ) : (
-                    <>
-                      <p className="text-muted-foreground text-xs">
-                        配下にプロジェクトが 1 件もないときだけ削除できます（子があれば先に
-                        <Link href={`/programs/${p.id}`} className="underline">
-                          プロジェクト側
-                        </Link>
-                        で空にしてください）。
-                      </p>
-                      <ConfirmDeleteForm
-                        action={deleteProgram.bind(null, p.id)}
-                        title="このプログラムを削除しますか？"
-                        description="プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。"
-                        triggerLabel="削除を試みる"
-                        confirmLabel="削除する"
-                      />
-                    </>
-                  )}
-                </CardFooter>
+                  </CardFooter>
+                ) : null}
               </Card>
             </li>
           ))}

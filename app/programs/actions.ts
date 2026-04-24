@@ -19,27 +19,35 @@ function parseOptionalDate(raw: FormDataEntryValue | null): string | null {
   return t === "" ? null : t;
 }
 
-export async function createProgram(formData: FormData) {
+export async function createProgram(
+  formData: FormData,
+): Promise<{ ok: true; id: string } | { ok: false }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const nameRaw = formData.get("name");
   const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
   if (name === "") {
-    return;
+    return { ok: false };
   }
   const startOn = parseOptionalDate(formData.get("startOn"));
   const endOn = parseOptionalDate(formData.get("endOn"));
-  await db.insert(programs).values({
-    userId: session.user.id,
-    name,
-    startOn,
-    endOn,
-  });
+  const [row] = await db
+    .insert(programs)
+    .values({
+      userId: session.user.id,
+      name,
+      startOn,
+      endOn,
+    })
+    .returning({ id: programs.id });
+  if (!row) {
+    return { ok: false };
+  }
   revalidatePath("/programs");
   revalidateAppShell();
-  redirect("/programs?toast=created");
+  return { ok: true, id: row.id };
 }
 
 export async function updateProgram(

@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateProgram } from "@/app/programs/actions";
@@ -39,8 +40,14 @@ export function ProgramEditDialog({ program }: { program: ProgramEditFields }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button type="button" variant="secondary" size="sm">
-            編集
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon-sm"
+            aria-label="編集"
+            title="編集"
+          >
+            <Pencil />
           </Button>
         }
       />
