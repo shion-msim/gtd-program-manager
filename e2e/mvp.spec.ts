@@ -23,7 +23,9 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     await page.goto("/inbox");
     const label = `e2e-inbox-${Date.now()}`;
     await page.getByPlaceholder("1 行でタスクを追加").fill(label);
-    await page.getByRole("button", { name: "追加" }).click();
+    await page.getByRole("button", { name: "追加（Enter）" }).click();
+    await expect(page.getByText("追加しました")).toBeVisible();
+    await page.goto("/inbox/table");
     await expect(page.getByText(label, { exact: true })).toBeVisible();
   });
 
@@ -67,7 +69,7 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
       data: { status: "done" },
     });
     expect(patched.ok()).toBeTruthy();
-    await page.goto("/inbox");
+    await page.goto("/inbox/table");
     await expect(page.getByText("done-test", { exact: true })).not.toBeVisible();
   });
 
@@ -85,15 +87,16 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     expect(proj.ok()).toBeTruthy();
     const project = (await proj.json()) as { id: string };
 
-    await page.goto("/inbox");
+    await page.goto("/inbox/table");
     const title = `e2e-ui-move-${Date.now()}`;
     await page.getByPlaceholder("1 行でタスクを追加").fill(title);
-    await page.getByRole("button", { name: "追加" }).click();
+    await page.getByRole("button", { name: "追加（Enter）" }).click();
+    await expect(page.getByText("追加しました")).toBeVisible();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
 
     const row = page
       .getByTestId("inbox-list")
-      .locator("li")
+      .locator("tr")
       .filter({ hasText: title });
     await row.getByTestId("inbox-move-target").selectOption(project.id);
     await row.getByTestId("inbox-move-submit").click();

@@ -60,6 +60,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
         </CardHeader>
         <CardContent>
           <form action={updateInboxTask.bind(null, taskId)} className="space-y-4">
+            <input type="hidden" name="returnPath" value="/inbox" />
             <div className="space-y-2">
               <Label htmlFor="title">タイトル</Label>
               <Input

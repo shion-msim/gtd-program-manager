@@ -7,11 +7,13 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 import { getInboxProjectId } from "@/lib/inbox";
+import { parseInboxReturnPath } from "@/lib/inbox-return-path";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 import { isTaskStatus } from "@/lib/task-constants";
 
 function revalidateInboxRelated(taskId?: string) {
   revalidatePath("/inbox");
+  revalidatePath("/inbox/table");
   revalidatePath("/dashboard");
   revalidatePath("/workload");
   revalidatePath("/tasks");
@@ -62,7 +64,8 @@ export async function addInboxTask(formData: FormData) {
     status: "inbox",
   });
   revalidateInboxRelated();
-  redirect("/inbox?toast=created");
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=created`);
 }
 
 async function applyInboxTaskFields(
@@ -174,7 +177,8 @@ export async function updateInboxTask(taskId: string, formData: FormData) {
     return;
   }
   revalidateInboxRelated(taskId);
-  redirect("/inbox?toast=saved");
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=saved`);
 }
 
 export async function moveInboxTaskToProject(taskId: string, formData: FormData) {
@@ -214,11 +218,12 @@ export async function moveInboxTaskToProject(taskId: string, formData: FormData)
     })
     .where(eq(tasks.id, taskId));
   revalidateInboxRelated(taskId);
-  redirect("/inbox?toast=moved");
+  const returnPath = parseInboxReturnPath(formData);
+  redirect(`${returnPath}?toast=moved`);
 }
 
 export async function completeInboxTask(taskId: string, formData: FormData) {
-  void formData;
+  const returnPath = parseInboxReturnPath(formData);
   const session = await auth();
   if (!session?.user?.id) {
     return;
@@ -235,5 +240,5 @@ export async function completeInboxTask(taskId: string, formData: FormData) {
     })
     .where(eq(tasks.id, taskId));
   revalidateInboxRelated(taskId);
-  redirect("/inbox?toast=done");
+  redirect(`${returnPath}?toast=done`);
 }
