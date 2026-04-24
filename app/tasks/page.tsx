@@ -54,7 +54,7 @@ export default async function TasksIndexPage() {
         <p className="text-muted-foreground text-sm">未完了のタスクはありません。</p>
       ) : (
         <ul
-          className="divide-border divide-y rounded-lg border text-sm"
+          className="divide-border divide-y overflow-hidden rounded-lg border text-sm"
           data-testid="tasks-index-list"
         >
           {rows.map((row) => {

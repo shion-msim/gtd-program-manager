@@ -125,7 +125,7 @@ export default async function ProjectTasksPage({ params }: Props) {
           </p>
         ) : (
           <ul
-            className="divide-border border-border divide-y rounded-lg border"
+            className="divide-border border-border divide-y overflow-hidden rounded-lg border"
             data-testid="project-tasks-open"
           >
             {openRows.map((t) => {
@@ -209,7 +209,7 @@ export default async function ProjectTasksPage({ params }: Props) {
       {doneRows.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-sm font-medium">完了（直近）</h2>
-          <ul className="divide-border border-border divide-y rounded-lg border text-sm">
+          <ul className="divide-border border-border divide-y overflow-hidden rounded-lg border text-sm">
             {doneRows.map((t) => {
               const entityColor = resolveTaskEntityAccent(
                 ctx.project.accentColor,

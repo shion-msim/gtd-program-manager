@@ -54,7 +54,7 @@ export default async function ProjectsIndexPage() {
                   {sec.programName}
                 </Link>
               </h2>
-              <ul className="divide-border divide-y rounded-lg border text-sm">
+              <ul className="divide-border divide-y overflow-hidden rounded-lg border text-sm">
                 {sec.items.map((row) => {
                   const href = row.isInbox ? "/inbox" : `/projects/${row.projectId}`;
                   const suffix = row.isInbox ? "（受信箱）" : null;

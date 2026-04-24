@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
+import { normalizeHexColor } from "@/lib/hex-color";
 import { cn } from "@/lib/utils";
 
 const TOP_NAV: {
@@ -104,11 +105,22 @@ export function AppSidebarBody({
             プログラム
           </p>
           <Accordion multiple defaultValue={[]} className="min-w-0 gap-2">
-            {data.programs.map((program) => (
+            {data.programs.map((program) => {
+              const accent = program.accentColor
+                ? normalizeHexColor(program.accentColor)
+                : null;
+              return (
               <AccordionItem key={program.id} value={program.id}>
                 <AccordionHeader className="px-0">
                   <AccordionTrigger className="border-0">
-                    <span className="truncate">{program.name}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-4 w-1.5 shrink-0 rounded-sm bg-muted-foreground/25"
+                        style={accent ? { backgroundColor: accent } : undefined}
+                        aria-hidden
+                      />
+                      <span className="truncate">{program.name}</span>
+                    </span>
                   </AccordionTrigger>
                 </AccordionHeader>
                 <AccordionPanel className="space-y-2 pt-1">
@@ -171,7 +183,8 @@ export function AppSidebarBody({
                   ) : null}
                 </AccordionPanel>
               </AccordionItem>
-            ))}
+              );
+            })}
           </Accordion>
         </>
       ) : null}
