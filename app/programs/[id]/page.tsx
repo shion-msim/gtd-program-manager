@@ -79,7 +79,7 @@ export default async function ProgramDetailPage({ params }: Props) {
         {projectRows.length === 0 ? (
           <p className="text-muted-foreground text-sm">まだプロジェクトがありません。</p>
         ) : (
-          <ul className="divide-border divide-y rounded-lg border" data-testid="program-projects-list">
+          <ul className="divide-border divide-y overflow-hidden rounded-lg border" data-testid="program-projects-list">
             {projectRows.map((proj) => (
               <li key={proj.id} className="flex min-w-0">
                 <ListRowEdgeAccent
