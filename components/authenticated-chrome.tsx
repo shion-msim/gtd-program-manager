@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { MenuIcon, PanelLeftCloseIcon, PanelRightOpenIcon } from "lucide-react";
 
+import { BrandLogoLink } from "@/components/brand-logo-link";
 import type { SidebarNavData } from "@/lib/sidebar-nav-data";
 import { AppSidebarBody } from "@/components/app-sidebar-body";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "gtd-sidebar-collapsed";
+const STORAGE_KEY = "kernie-sidebar-collapsed";
 
 function readCollapsed(): boolean {
   if (typeof window === "undefined") return false;
@@ -64,9 +64,7 @@ export function AuthenticatedChrome({
           >
             <MenuIcon className="size-4" />
           </Button>
-          <Link href="/" className="text-foreground min-w-0 truncate font-medium">
-            GTD マネージャー
-          </Link>
+          <BrandLogoLink href="/dashboard" className="min-w-0 shrink-0" />
         </div>
       </header>
 

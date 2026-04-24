@@ -93,6 +93,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // REST は各 Route Handler で 401。ミドルウェアではリダイレクトしない
         return true;
       }
+      // `app/icon.png` / `app/apple-icon.png` は拡張子なしの /icon, /apple-icon として配信される
+      if (
+        nextUrl.pathname === "/icon" ||
+        nextUrl.pathname === "/apple-icon" ||
+        nextUrl.pathname === "/favicon.ico" ||
+        nextUrl.pathname === "/manifest.webmanifest"
+      ) {
+        return true;
+      }
       if (nextUrl.pathname === "/" || nextUrl.pathname === "/login") {
         return true;
       }

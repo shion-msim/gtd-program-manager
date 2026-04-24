@@ -18,8 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GTD プログラムマネージャー",
-  description: "プログラム・プロジェクト・タスク管理（GTD 型）",
+  title: { default: "Kernie", template: "%s | Kernie" },
+  description: "Kernie — プログラム・プロジェクト・タスク管理（GTD 型）",
+  applicationName: "Kernie",
+  appleWebApp: { title: "Kernie" },
 };
 
 export default function RootLayout({

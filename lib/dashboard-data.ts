@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -12,6 +13,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import { programs, projects, tasks } from "@/db/schema";
+import { getInboxProgramIdForUser } from "@/lib/inbox";
 import {
   addDaysYmd,
   getSixMonWeekBuckets,
@@ -171,6 +173,7 @@ export async function getSummaryForUser(
 ) {
   const todayYmd = ymdInTimeZone(new Date(), timeZone);
   const within7DaysEnd = addDaysYmd(todayYmd, 6);
+  const inboxProgramId = await getInboxProgramIdForUser(userId);
 
   const [inboxRow] = await db
     .select({ n: count() })
@@ -247,7 +250,17 @@ export async function getSummaryForUser(
     .where(
       and(eq(projects.userId, userId), eq(tasks.status, "next")),
     )
-    .orderBy(desc(tasks.updatedAt))
+    .orderBy(
+      asc(
+        sql`(case
+          when ${tasks.priority} = 'high' then 0
+          when ${tasks.priority} = 'medium' then 1
+          when ${tasks.priority} = 'low' then 2
+          else 3
+        end)`,
+      ),
+      desc(tasks.updatedAt),
+    )
     .limit(3);
 
   const [{ n: dueNext7Count }] = await db
@@ -278,6 +291,7 @@ export async function getSummaryForUser(
           sql`${programs.endOn} is null`,
           gte(programs.endOn, todayYmd),
         ),
+        ...(inboxProgramId ? [ne(programs.id, inboxProgramId)] : []),
       ),
     )
     .orderBy(desc(programs.createdAt))
