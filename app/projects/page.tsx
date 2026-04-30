@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
-import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import { ProjectsIndexDrag } from "@/components/projects-index-drag";
 import { ensureInboxForUser } from "@/lib/inbox";
-import { resolveTaskEntityAccent } from "@/lib/user-priority-colors";
+import type { ProjectListRow } from "@/lib/cross-project-views";
 import { getProjectsListRowsForUser } from "@/lib/cross-project-views";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function ProjectsIndexPage() {
@@ -17,7 +16,7 @@ export default async function ProjectsIndexPage() {
 
   const byProgram = new Map<
     string,
-    { programName: string; programId: string; items: typeof rows }
+    { programName: string; programId: string; items: ProjectListRow[] }
   >();
   for (const row of rows) {
     let g = byProgram.get(row.programId);
@@ -27,16 +26,24 @@ export default async function ProjectsIndexPage() {
     }
     g.items.push(row);
   }
-  const sections = [...byProgram.values()].sort((a, b) =>
-    a.programName.localeCompare(b.programName, "ja"),
-  );
+
+  /** getProjectsListRowsForUser がプログラム nav 順のため、その順でセクションを保持 */
+  const sectionOrderIds: string[] = [];
+  for (const row of rows) {
+    if (!sectionOrderIds.includes(row.programId)) {
+      sectionOrderIds.push(row.programId);
+    }
+  }
+  const sections = sectionOrderIds
+    .map((id) => byProgram.get(id))
+    .filter((sec): sec is NonNullable<typeof sec> => sec !== undefined);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
       <header>
         <h1 className="text-xl font-semibold">プロジェクト一覧</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          すべてのプロジェクトからタスク一覧や受信箱へ移動できます。
+          すべてのプロジェクトからタスク一覧や受信箱へ移動できます。グリップをドラッグして並べ替えられます。
         </p>
       </header>
 
@@ -44,46 +51,7 @@ export default async function ProjectsIndexPage() {
         <p className="text-muted-foreground text-sm">プロジェクトはまだありません。</p>
       ) : (
         <div className="space-y-8" data-testid="projects-index-list">
-          {sections.map((sec) => (
-            <section key={sec.programId} className="space-y-2">
-              <h2 className="text-sm font-medium">
-                <Link
-                  href={`/programs/${sec.programId}`}
-                  className="text-primary underline-offset-4 hover:underline"
-                >
-                  {sec.programName}
-                </Link>
-              </h2>
-              <ul className="divide-border divide-y overflow-hidden rounded-lg border text-sm">
-                {sec.items.map((row) => {
-                  const href = row.isInbox ? "/inbox" : `/projects/${row.projectId}`;
-                  const suffix = row.isInbox ? "（受信箱）" : null;
-                  return (
-                    <li key={row.projectId} className="min-w-0">
-                      <ListRowEdgeAccent
-                        as="div"
-                        entityColor={resolveTaskEntityAccent(
-                          row.projectAccent,
-                          row.programAccent,
-                        )}
-                        priorityColor={null}
-                      >
-                        <div className="px-3 py-3">
-                          <Link
-                            href={href}
-                            className="text-primary font-medium underline-offset-4 hover:underline"
-                          >
-                            {row.projectName}
-                            {suffix}
-                          </Link>
-                        </div>
-                      </ListRowEdgeAccent>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
+          <ProjectsIndexDrag sections={sections} />
         </div>
       )}
     </div>

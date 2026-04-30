@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
+import { InboxTaskEditDialog } from "@/components/inbox-task-edit-dialog";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
 import { TaskProgramProjectTags } from "@/components/task-program-project-tags";
 import { buttonVariants } from "@/components/ui/button";
 import { getDefaultTimeZone, getSummaryForUser } from "@/lib/dashboard-data";
 import { normalizeHexColor } from "@/lib/hex-color";
-import {
-  getPriorityColorsForUser,
-  priorityStripeColor,
-} from "@/lib/user-priority-colors";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
+import { priorityStripeColor } from "@/lib/task-row-accent";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -56,12 +56,20 @@ export default async function DashboardPage() {
                 <li key={t.id} className="min-w-0">
                   <div className="py-0.5">
                     <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
-                      <Link
-                        href={`/projects/${t.projectId}#task-${t.id}`}
-                        className="min-w-0 flex-1 truncate underline underline-offset-4"
-                      >
-                        {t.title}
-                      </Link>
+                      <InboxTaskEditDialog
+                        task={{
+                          id: t.id,
+                          title: t.title,
+                          note: t.note,
+                          dueOn: t.dueOn,
+                          status: t.status,
+                          priority: t.priority,
+                        }}
+                        triggerLabel={t.title}
+                        triggerVariant="link"
+                        triggerSize="sm"
+                        triggerClassName="min-w-0 flex-1 justify-start truncate px-0 text-left text-sm font-normal text-foreground"
+                      />
                       <TaskProgramProjectTags
                         programName={t.programName}
                         projectName={t.projectName}
@@ -109,12 +117,21 @@ export default async function DashboardPage() {
               <li key={t.id} className="min-w-0">
                 <div className="py-0.5">
                   <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
-                    <Link
-                      href={`/projects/${t.projectId}#task-${t.id}`}
-                      className="min-w-0 flex-1 truncate underline underline-offset-4"
-                    >
-                      {t.title}
-                    </Link>
+                    <ProjectTaskEditDialog
+                      projectId={t.projectId}
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                      triggerLabel={t.title}
+                      triggerVariant="link"
+                      triggerSize="sm"
+                      triggerClassName="min-w-0 flex-1 justify-start truncate px-0 text-left text-sm font-normal text-foreground"
+                    />
                     <TaskProgramProjectTags
                       programName={t.programName}
                       projectName={t.projectName}
@@ -147,12 +164,21 @@ export default async function DashboardPage() {
               <li key={t.id} className="min-w-0">
                 <div className="py-0.5">
                   <div className="flex w-full min-w-0 items-baseline justify-between gap-3">
-                    <Link
-                      href={`/projects/${t.projectId}#task-${t.id}`}
-                      className="min-w-0 flex-1 truncate underline underline-offset-4"
-                    >
-                      {t.title}
-                    </Link>
+                    <ProjectTaskEditDialog
+                      projectId={t.projectId}
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                      triggerLabel={t.title}
+                      triggerVariant="link"
+                      triggerSize="sm"
+                      triggerClassName="min-w-0 flex-1 justify-start truncate px-0 text-left text-sm font-normal text-foreground"
+                    />
                     <TaskProgramProjectTags
                       programName={t.programName}
                       projectName={t.projectName}

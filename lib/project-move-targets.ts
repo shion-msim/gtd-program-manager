@@ -26,5 +26,11 @@ export async function getOtherProjectsForMove(
     .where(
       and(eq(projects.userId, userId), ne(projects.id, excludeProjectId)),
     )
-    .orderBy(desc(projects.isInbox), asc(programs.name), asc(projects.name));
+    .orderBy(
+      desc(projects.isInbox),
+      asc(programs.navSortIndex),
+      asc(programs.name),
+      asc(projects.navSortIndex),
+      asc(projects.name),
+    );
 }

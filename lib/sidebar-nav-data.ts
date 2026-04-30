@@ -13,6 +13,7 @@ export type SidebarProjectNav = {
   isInbox: boolean;
   openTaskCount: number;
   href: string;
+  navSortIndex: number;
 };
 
 export type SidebarProgramNav = {
@@ -24,6 +25,7 @@ export type SidebarProgramNav = {
   projects: SidebarProjectNav[];
   /** 受信箱プログラム展開時: プロジェクト未割り当て＝Inbox 内の未完了タスク */
   inboxOpenTasks: SidebarOpenTask[];
+  navSortIndex: number;
 };
 
 export type SidebarNavData = {
@@ -39,16 +41,18 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
         id: programs.id,
         name: programs.name,
         accentColor: programs.accentColor,
+        navSortIndex: programs.navSortIndex,
       })
       .from(programs)
       .where(eq(programs.userId, userId))
-      .orderBy(asc(programs.name)),
+      .orderBy(asc(programs.navSortIndex), asc(programs.name)),
     db
       .select({
         id: projects.id,
         name: projects.name,
         programId: projects.programId,
         isInbox: projects.isInbox,
+        navSortIndex: projects.navSortIndex,
       })
       .from(projects)
       .where(eq(projects.userId, userId)),
@@ -87,9 +91,13 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
 
   const byProgram = new Map<
     string,
-    Omit<SidebarProgramNav, "projects" | "inboxOpenTasks"> & {
+    Omit<
+      SidebarProgramNav,
+      "projects" | "inboxOpenTasks" | "isInboxProgram"
+    > & {
       projects: SidebarProjectNav[];
       inboxOpenTasks: SidebarOpenTask[];
+      isInboxProgram: boolean;
     }
   >();
 
@@ -98,6 +106,7 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
       id: p.id,
       name: p.name,
       accentColor: p.accentColor,
+      navSortIndex: p.navSortIndex,
       isInboxProgram: false,
       projects: [],
       inboxOpenTasks: [],
@@ -116,12 +125,15 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
       isInbox: pr.isInbox,
       openTaskCount,
       href,
+      navSortIndex: pr.navSortIndex,
     });
   }
 
   for (const prog of byProgram.values()) {
     prog.projects.sort((a, b) => {
       if (a.isInbox !== b.isInbox) return a.isInbox ? -1 : 1;
+      const idx = (a.navSortIndex ?? 0) - (b.navSortIndex ?? 0);
+      if (idx !== 0) return idx;
       return a.name.localeCompare(b.name, "ja");
     });
     if (prog.isInboxProgram) {
@@ -129,9 +141,10 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
     }
   }
 
-  const programsList = [...byProgram.values()].sort((a, b) => {
-    if (a.isInboxProgram !== b.isInboxProgram) return a.isInboxProgram ? -1 : 1;
-    return a.name.localeCompare(b.name, "ja");
+  /** progRows がすでに nav 順であるため、その順で列挙 */
+  const programsList: SidebarProgramNav[] = progRows.flatMap((row) => {
+    const prog = byProgram.get(row.id);
+    return prog ? [prog] : [];
   });
 
   return { programs: programsList };

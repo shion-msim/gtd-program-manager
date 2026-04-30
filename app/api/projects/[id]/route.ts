@@ -10,6 +10,7 @@ import {
   unauthorized,
 } from "@/lib/api/route-utils";
 import { getInboxProjectId } from "@/lib/inbox";
+import { nextProjectNavSortIndexForProgram } from "@/lib/nav-sort-keys";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -86,18 +87,32 @@ export async function PATCH(request: Request, context: Ctx) {
       return badRequest("Inbox プロジェクトは既に存在します");
     }
   }
+  const patch: {
+    name?: string;
+    programId?: string;
+    navSortIndex?: number;
+    isInbox?: boolean;
+    updatedAt: Date;
+  } = { updatedAt: new Date() };
+  if (name !== undefined) {
+    patch.name = name;
+  }
+  if (
+    o.programId !== undefined &&
+    typeof o.programId === "string"
+  ) {
+    patch.programId = o.programId;
+    if (o.programId !== existing.programId) {
+      patch.navSortIndex =
+        await nextProjectNavSortIndexForProgram(o.programId);
+    }
+  }
+  if (o.isInbox !== undefined) {
+    patch.isInbox = o.isInbox === true;
+  }
   const [updated] = await db
     .update(projects)
-    .set({
-      ...(name !== undefined ? { name } : {}),
-      ...(o.programId !== undefined && typeof o.programId === "string"
-        ? { programId: o.programId }
-        : {}),
-      ...(o.isInbox !== undefined
-        ? { isInbox: o.isInbox === true }
-        : {}),
-      updatedAt: new Date(),
-    })
+    .set(patch)
     .where(and(eq(projects.id, id), eq(projects.userId, userId)))
     .returning();
   return NextResponse.json(updated);

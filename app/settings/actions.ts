@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { userAppSettings } from "@/db/schema";
 import { normalizeHexColor } from "@/lib/hex-color";
-import type { PriorityColorMap } from "@/lib/user-priority-colors";
+import type { PriorityColorMap } from "@/lib/task-row-accent";
 import {
   DEFAULT_PRIORITY_COLORS,
   TASK_PRIORITIES,

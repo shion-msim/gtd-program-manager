@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import { parseOptionalHexColor } from "@/lib/hex-color";
+import { nextProgramNavSortIndex } from "@/lib/nav-sort-keys";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 function parseOptionalDate(raw: FormDataEntryValue | null): string | null {
@@ -38,6 +39,7 @@ export async function createProgram(
   const accentColor = clearAccent
     ? null
     : parseOptionalHexColor(formData.get("accentColor"));
+  const navSortIndex = await nextProgramNavSortIndex(session.user.id);
   const [row] = await db
     .insert(programs)
     .values({
@@ -46,6 +48,7 @@ export async function createProgram(
       startOn,
       endOn,
       accentColor,
+      navSortIndex,
     })
     .returning({ id: programs.id });
   if (!row) {

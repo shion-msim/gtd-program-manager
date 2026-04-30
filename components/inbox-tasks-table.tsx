@@ -8,8 +8,8 @@ import {
   TASK_STATUS_LABELS,
 } from "@/lib/task-constants";
 import type { InboxOpenTaskRow } from "@/lib/inbox-tasks";
-import type { PriorityColorMap } from "@/lib/user-priority-colors";
-import { priorityStripeColor, resolveTaskEntityAccent } from "@/lib/user-priority-colors";
+import type { PriorityColorMap } from "@/lib/task-row-accent";
+import { priorityStripeColor, resolveTaskEntityAccent } from "@/lib/task-row-accent";
 import {
   completeInboxTask,
   moveInboxTaskToProject,

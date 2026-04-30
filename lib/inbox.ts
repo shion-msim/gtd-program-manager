@@ -18,6 +18,7 @@ export async function createInboxForNewUser(userId: string) {
       name: INBOX_PROGRAM_NAME,
       startOn: null,
       endOn: null,
+      navSortIndex: 0,
     })
     .returning({ id: programs.id });
 
@@ -31,6 +32,7 @@ export async function createInboxForNewUser(userId: string) {
       programId: program.id,
       name: INBOX_PROJECT_NAME,
       isInbox: true,
+      navSortIndex: 0,
     });
   } catch (e) {
     await db.delete(programs).where(eq(programs.id, program.id));

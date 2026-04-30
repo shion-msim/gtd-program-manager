@@ -3,7 +3,8 @@
 import type { ComponentProps } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { updateInboxTaskStay } from "@/app/inbox/actions";
+import { deleteInboxTask, updateInboxTaskStay } from "@/app/inbox/actions";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,6 +47,7 @@ type Props = {
   triggerLabel?: string;
   triggerVariant?: ComponentProps<typeof Button>["variant"];
   triggerSize?: ComponentProps<typeof Button>["size"];
+  triggerClassName?: string;
 };
 
 export function InboxTaskEditDialog({
@@ -53,6 +55,7 @@ export function InboxTaskEditDialog({
   triggerLabel = "編集",
   triggerVariant = "secondary",
   triggerSize = "sm",
+  triggerClassName,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -61,7 +64,12 @@ export function InboxTaskEditDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button type="button" variant={triggerVariant} size={triggerSize}>
+          <Button
+            type="button"
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+          >
             {triggerLabel}
           </Button>
         }
@@ -69,11 +77,18 @@ export function InboxTaskEditDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>タスクを編集</DialogTitle>
-          <DialogDescription>受信箱内のメモと〆切・状態を更新します。</DialogDescription>
+          <DialogDescription>
+            受信箱内のメモと〆切・状態を更新するか、削除できます。
+          </DialogDescription>
         </DialogHeader>
         <form
           className="space-y-4"
           onSubmit={(e) => {
+            const submitEvent = e.nativeEvent as SubmitEvent;
+            const submitter = submitEvent.submitter;
+            if (submitter instanceof HTMLElement && !e.currentTarget.contains(submitter)) {
+              return;
+            }
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             startTransition(async () => {
@@ -147,13 +162,26 @@ export function InboxTaskEditDialog({
               </NativeSelect>
             </div>
           </div>
-          <DialogFooter className="pt-2">
-            <DialogClose render={<Button type="button" variant="outline" size="sm" />}>
-              閉じる
-            </DialogClose>
-            <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-              {pending ? "保存中…" : "保存"}
-            </Button>
+          <DialogFooter className="flex-col gap-3 pt-2 sm:flex-col">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <DialogClose render={<Button type="button" variant="outline" size="sm" />}>
+                閉じる
+              </DialogClose>
+              <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+                {pending ? "保存中…" : "保存"}
+              </Button>
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-muted-foreground mb-2 text-xs font-medium">危険な操作</p>
+              <ConfirmDeleteForm
+                action={deleteInboxTask.bind(null, task.id)}
+                title="このタスクを削除しますか？"
+                description="削除すると元に戻せません。"
+                triggerLabel="削除"
+                confirmLabel="削除する"
+                triggerVariant="destructive"
+              />
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -2,7 +2,7 @@ import { updatePriorityColors } from "@/app/settings/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
-import type { PriorityColorMap } from "@/lib/user-priority-colors";
+import type { PriorityColorMap } from "@/lib/task-row-accent";
 
 export function SettingsPriorityColorsForm({
   colors,
