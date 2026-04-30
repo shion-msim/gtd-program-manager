@@ -40,6 +40,8 @@ export const programs = pgTable(
     accentColor: text("accent_color"),
     startOn: date("start_on"),
     endOn: date("end_on"),
+    /** ナビ・一覧の並び（小さいほど上）。受信箱プログラムは常に 0 を想定 */
+    navSortIndex: integer("nav_sort_index").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -65,6 +67,8 @@ export const projects = pgTable(
     name: text("name").notNull(),
     accentColor: text("accent_color"),
     isInbox: boolean("is_inbox").notNull().default(false),
+    /** 同一プログラム内の並び（小さいほど上）。Inbox は常に 0 を想定 */
+    navSortIndex: integer("nav_sort_index").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

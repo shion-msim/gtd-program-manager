@@ -48,6 +48,7 @@ type Props = {
   triggerLabel?: string;
   triggerVariant?: ComponentProps<typeof Button>["variant"];
   triggerSize?: ComponentProps<typeof Button>["size"];
+  triggerClassName?: string;
 };
 
 export function ProjectTaskEditDialog({
@@ -56,6 +57,7 @@ export function ProjectTaskEditDialog({
   triggerLabel = "編集",
   triggerVariant = "secondary",
   triggerSize = "sm",
+  triggerClassName,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -64,7 +66,12 @@ export function ProjectTaskEditDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button type="button" variant={triggerVariant} size={triggerSize}>
+          <Button
+            type="button"
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+          >
             {triggerLabel}
           </Button>
         }
@@ -79,6 +86,11 @@ export function ProjectTaskEditDialog({
         <form
           className="space-y-4"
           onSubmit={(e) => {
+            const submitEvent = e.nativeEvent as SubmitEvent;
+            const submitter = submitEvent.submitter;
+            if (submitter instanceof HTMLElement && !e.currentTarget.contains(submitter)) {
+              return;
+            }
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             startTransition(async () => {

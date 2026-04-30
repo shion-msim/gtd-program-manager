@@ -192,6 +192,9 @@ export async function getSummaryForUser(
     .select({
       id: tasks.id,
       title: tasks.title,
+      note: tasks.note,
+      dueOn: tasks.dueOn,
+      status: tasks.status,
       projectId: tasks.projectId,
       programId: programs.id,
       priority: tasks.priority,
@@ -294,7 +297,7 @@ export async function getSummaryForUser(
         ...(inboxProgramId ? [ne(programs.id, inboxProgramId)] : []),
       ),
     )
-    .orderBy(desc(programs.createdAt))
+    .orderBy(asc(programs.navSortIndex), asc(programs.name))
     .limit(20);
 
   return {

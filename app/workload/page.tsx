@@ -1,11 +1,11 @@
 import { auth } from "@/auth";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { getDefaultTimeZone, getWorkloadViewForUser } from "@/lib/dashboard-data";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import {
-  getPriorityColorsForUser,
   priorityStripeColor,
   resolveTaskEntityAccent,
-} from "@/lib/user-priority-colors";
+} from "@/lib/task-row-accent";
 import { addDaysYmd, mondayOfWeekContainingYmd } from "@/lib/calendar-buckets";
 import Link from "next/link";
 import { redirect } from "next/navigation";

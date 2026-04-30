@@ -17,11 +17,11 @@ import {
 } from "./actions";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import {
-  getPriorityColorsForUser,
   priorityStripeColor,
   resolveTaskEntityAccent,
-} from "@/lib/user-priority-colors";
+} from "@/lib/task-row-accent";
 
 const PROJECT_TASK_STATUS_OPTIONS = TASK_STATUSES.map((s) => ({
   value: s,

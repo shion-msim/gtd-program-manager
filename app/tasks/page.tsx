@@ -7,11 +7,11 @@ import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { ensureInboxForUser } from "@/lib/inbox";
 import { getOpenTasksListRowsForUser } from "@/lib/cross-project-views";
+import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import {
-  getPriorityColorsForUser,
   priorityStripeColor,
   resolveTaskEntityAccent,
-} from "@/lib/user-priority-colors";
+} from "@/lib/task-row-accent";
 import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUSES,
