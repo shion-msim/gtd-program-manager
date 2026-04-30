@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
+import { nextProjectNavSortIndexForProgram } from "@/lib/nav-sort-keys";
 import { parseOptionalHexColor } from "@/lib/hex-color";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
@@ -37,11 +38,13 @@ export async function createProject(programId: string, formData: FormData) {
   if (name === "") {
     return;
   }
+  const navSortIndex = await nextProjectNavSortIndexForProgram(programId);
   await db.insert(projects).values({
     userId,
     programId,
     name,
     isInbox: false,
+    navSortIndex,
   });
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/programs");

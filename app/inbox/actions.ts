@@ -228,6 +228,21 @@ export async function moveInboxTaskToProject(taskId: string, formData: FormData)
   redirect(`${returnPath}?toast=moved`);
 }
 
+export async function deleteInboxTask(taskId: string, formData: FormData) {
+  const returnPath = parseInboxReturnPath(formData);
+  const session = await auth();
+  if (!session?.user?.id) {
+    return;
+  }
+  const existing = await taskInUserInbox(session.user.id, taskId);
+  if (!existing) {
+    return;
+  }
+  await db.delete(tasks).where(eq(tasks.id, taskId));
+  revalidateInboxRelated(taskId);
+  redirect(`${returnPath}?toast=deleted`);
+}
+
 export async function completeInboxTask(taskId: string, formData: FormData) {
   const returnPath = parseInboxReturnPath(formData);
   const session = await auth();

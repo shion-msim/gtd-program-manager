@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
-import { ProjectEditDialog } from "@/components/project-edit-dialog";
+import { ProgramProjectsDragList } from "@/components/program-projects-drag-list";
 import { Button } from "@/components/ui/button";
-import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { and, asc, eq } from "drizzle-orm";
@@ -9,8 +8,6 @@ import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
-import { normalizeHexColor } from "@/lib/hex-color";
 import { createProject, deleteProject } from "./actions";
 
 type Props = { params: Promise<{ id: string }> };
@@ -33,10 +30,15 @@ export default async function ProgramDetailPage({ params }: Props) {
   }
 
   const projectRows = await db
-    .select()
+    .select({
+      id: projects.id,
+      name: projects.name,
+      accentColor: projects.accentColor,
+      isInbox: projects.isInbox,
+    })
     .from(projects)
     .where(eq(projects.programId, programId))
-    .orderBy(asc(projects.name));
+    .orderBy(asc(projects.navSortIndex), asc(projects.name));
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -79,70 +81,11 @@ export default async function ProgramDetailPage({ params }: Props) {
         {projectRows.length === 0 ? (
           <p className="text-muted-foreground text-sm">まだプロジェクトがありません。</p>
         ) : (
-          <ul className="divide-border divide-y overflow-hidden rounded-lg border" data-testid="program-projects-list">
-            {projectRows.map((proj) => (
-              <li key={proj.id} className="flex min-w-0">
-                <ListRowEdgeAccent
-                  as="div"
-                  entityColor={
-                    proj.accentColor
-                      ? normalizeHexColor(proj.accentColor)
-                      : null
-                  }
-                  priorityColor={null}
-                  className="min-w-0 flex-1"
-                >
-                  <div className="space-y-3 p-4">
-                {proj.isInbox ? (
-                  <div>
-                    <p className="font-medium">{proj.name}</p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      システム管理の Inbox です。名前の変更や削除はできません。
-                    </p>
-                    <p className="mt-2">
-                      <Link
-                        href="/inbox"
-                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        受信箱でタスクを見る
-                      </Link>
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="min-w-0 font-medium">{proj.name}</p>
-                      <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <Link
-                          href={`/projects/${proj.id}`}
-                          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                        >
-                          タスク一覧
-                        </Link>
-                        <ProjectEditDialog
-                          project={{
-                            id: proj.id,
-                            name: proj.name,
-                            accentColor: proj.accentColor,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <ConfirmDeleteForm
-                      action={deleteProject.bind(null, proj.id)}
-                      title="このプロジェクトを削除しますか？"
-                      description="配下のタスクもすべて削除されます。"
-                      triggerLabel="削除"
-                      confirmLabel="削除する"
-                      triggerVariant="destructive"
-                    />
-                  </>
-                )}
-                  </div>
-                </ListRowEdgeAccent>
-              </li>
-            ))}
-          </ul>
+          <ProgramProjectsDragList
+            programId={programId}
+            projectsOrdered={projectRows}
+            deleteProject={deleteProject}
+          />
         )}
       </section>
     </div>

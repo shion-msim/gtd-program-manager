@@ -28,7 +28,12 @@ export async function getProjectsListRowsForUser(
     .from(projects)
     .innerJoin(programs, eq(projects.programId, programs.id))
     .where(eq(projects.userId, userId))
-    .orderBy(asc(programs.name), desc(projects.isInbox), asc(projects.name));
+    .orderBy(
+      asc(programs.navSortIndex),
+      asc(programs.name),
+      asc(projects.navSortIndex),
+      asc(projects.name),
+    );
 }
 
 export type OpenTaskListRow = {

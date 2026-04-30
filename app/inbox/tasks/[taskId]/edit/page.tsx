@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -20,7 +21,7 @@ import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { updateInboxTask } from "@/app/inbox/actions";
+import { deleteInboxTask, updateInboxTask } from "@/app/inbox/actions";
 
 function dueForInput(v: string | null | undefined): string {
   if (!v) {
@@ -51,7 +52,9 @@ export default async function InboxTaskEditPage({ params }: Props) {
       </p>
       <header>
         <h1 className="text-xl font-semibold">タスクを編集</h1>
-        <p className="text-muted-foreground mt-1 text-sm">受信箱内のメモと〆切・状態を更新します。</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          受信箱内のメモと〆切・状態を更新するか、削除できます。
+        </p>
       </header>
 
       <Card size="sm">
@@ -59,7 +62,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
           <CardTitle>内容</CardTitle>
           <CardDescription>保存すると受信箱一覧に戻ります。</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <form action={updateInboxTask.bind(null, taskId)} className="space-y-4">
             <input type="hidden" name="returnPath" value="/inbox" />
             <div className="space-y-2">
@@ -134,6 +137,17 @@ export default async function InboxTaskEditPage({ params }: Props) {
               </Link>
             </div>
           </form>
+          <div className="border-t pt-4">
+            <p className="text-muted-foreground mb-2 text-sm font-medium">危険な操作</p>
+            <ConfirmDeleteForm
+              action={deleteInboxTask.bind(null, taskId)}
+              title="このタスクを削除しますか？"
+              description="削除すると元に戻せません。"
+              triggerLabel="削除"
+              confirmLabel="削除する"
+              triggerVariant="destructive"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

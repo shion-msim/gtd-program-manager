@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { programs } from "@/db/schema";
@@ -7,6 +7,7 @@ import {
   getSessionUserId,
   unauthorized,
 } from "@/lib/api/route-utils";
+import { nextProgramNavSortIndex } from "@/lib/nav-sort-keys";
 
 export async function GET() {
   const userId = await getSessionUserId();
@@ -17,7 +18,7 @@ export async function GET() {
     .select()
     .from(programs)
     .where(eq(programs.userId, userId))
-    .orderBy(desc(programs.createdAt));
+    .orderBy(asc(programs.navSortIndex), asc(programs.name));
   return NextResponse.json(rows);
 }
 
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
   const endOn =
     o.endOn === null || o.endOn === undefined ? null : String(o.endOn);
 
+  const navSortIndex = await nextProgramNavSortIndex(userId);
   const [created] = await db
     .insert(programs)
     .values({
@@ -54,6 +56,7 @@ export async function POST(request: Request) {
       name,
       startOn: startOn ?? null,
       endOn: endOn ?? null,
+      navSortIndex,
     })
     .returning();
   return NextResponse.json(created, { status: 201 });
