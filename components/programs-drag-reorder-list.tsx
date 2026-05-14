@@ -40,11 +40,11 @@ export type ProgramsDragReorderListItem = Pick<
 function FrozenProgramRow({
   program,
   isInboxProgram,
-  deleteAction,
+  deleteProgram,
 }: {
   program: ProgramsDragReorderListItem;
   isInboxProgram: boolean;
-  deleteAction: (formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
   const accent = resolveAccentToken(program.accentColor);
 
@@ -101,7 +101,7 @@ function FrozenProgramRow({
               />
               <ProgramDeleteWithHint
                 programId={program.id}
-                action={deleteAction}
+                deleteProgram={deleteProgram}
                 disabled={isInboxProgram}
                 disabledHint={deleteHint}
               />
@@ -115,10 +115,10 @@ function FrozenProgramRow({
 
 function SortableProgramRow({
   program,
-  deleteAction,
+  deleteProgram,
 }: {
   program: ProgramsDragReorderListItem;
-  deleteAction: (formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
   const {
     attributes,
@@ -178,10 +178,7 @@ function SortableProgramRow({
                 }}
                 disabled={false}
               />
-              <ProgramDeleteWithHint
-                programId={program.id}
-                action={deleteAction}
-              />
+              <ProgramDeleteWithHint programId={program.id} deleteProgram={deleteProgram} />
             </div>
           </CardHeader>
         </Card>
@@ -195,7 +192,7 @@ function ProgramsDragReorderDndInner({
   deleteProgram,
 }: {
   sortablesFromProp: ProgramsDragReorderListItem[];
-  deleteProgram: (programId: string, formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
   const [orderedSortables, setOrderedSortables] = useState(sortablesFromProp);
@@ -243,11 +240,7 @@ function ProgramsDragReorderDndInner({
       <SortableContext items={orderedSortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
         <>
           {orderedSortables.map((p) => (
-            <SortableProgramRow
-              key={p.id}
-              program={p}
-              deleteAction={deleteProgram.bind(null, p.id)}
-            />
+            <SortableProgramRow key={p.id} program={p} deleteProgram={deleteProgram} />
           ))}
         </>
       </SortableContext>
@@ -262,7 +255,7 @@ export function ProgramsDragReorderList({
 }: {
   inboxProgramId: string | null;
   programsOrdered: ProgramsDragReorderListItem[];
-  deleteProgram: (programId: string, formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
   const dndReady = useIsClient();
 
@@ -286,7 +279,7 @@ export function ProgramsDragReorderList({
         <FrozenProgramRow
           program={inboxRow}
           isInboxProgram
-          deleteAction={deleteProgram.bind(null, inboxRow.id)}
+          deleteProgram={deleteProgram}
         />
       ) : null}
       {dndReady ? (
@@ -301,7 +294,7 @@ export function ProgramsDragReorderList({
             key={p.id}
             program={p}
             isInboxProgram={false}
-            deleteAction={deleteProgram.bind(null, p.id)}
+            deleteProgram={deleteProgram}
           />
         ))
       )}

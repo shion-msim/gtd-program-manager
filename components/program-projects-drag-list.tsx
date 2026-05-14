@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { projects } from "@/db/schema";
 import { reorderProjectsInProgram } from "@/lib/navigation-order-actions";
 
-import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { ProgramProjectDeleteConfirm } from "@/components/program-project-delete-confirm";
 import { ProjectEditDialog } from "@/components/project-edit-dialog";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { resolveAccentToken } from "@/lib/design-tokens";
@@ -69,13 +69,8 @@ function FrozenInboxProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
 }
 
 /** SSR / hydration では dnd-kit の aria ID がズレるため、マウント前はこれを描画する */
-function FrozenNormProjectRow({
-  proj,
-  deleteProject,
-}: {
-  proj: ProgramProjectsDragProject;
-  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
-}) {
+function FrozenNormProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
+  const router = useRouter();
   return (
     <li className="flex min-w-0">
       <div
@@ -110,13 +105,11 @@ function FrozenNormProjectRow({
               />
             </div>
           </div>
-          <ConfirmDeleteForm
-            action={deleteProject.bind(null, proj.id)}
-            title="このプロジェクトを削除しますか？"
-            description="配下のタスクもすべて削除されます。"
-            triggerLabel="削除"
-            confirmLabel="削除する"
-            triggerVariant="destructive"
+          <ProgramProjectDeleteConfirm
+            projectId={proj.id}
+            onDeleted={() => {
+              router.refresh();
+            }}
           />
         </div>
       </ListRowEdgeAccent>
@@ -124,13 +117,8 @@ function FrozenNormProjectRow({
   );
 }
 
-function ArchivedProjectRow({
-  proj,
-  deleteProject,
-}: {
-  proj: ProgramProjectsDragProject;
-  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
-}) {
+function ArchivedProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
+  const router = useRouter();
   return (
     <li className="flex min-w-0">
       <div
@@ -165,13 +153,11 @@ function ArchivedProjectRow({
               />
             </div>
           </div>
-          <ConfirmDeleteForm
-            action={deleteProject.bind(null, proj.id)}
-            title="このプロジェクトを削除しますか？"
-            description="配下のタスクもすべて削除されます。"
-            triggerLabel="削除"
-            confirmLabel="削除する"
-            triggerVariant="destructive"
+          <ProgramProjectDeleteConfirm
+            projectId={proj.id}
+            onDeleted={() => {
+              router.refresh();
+            }}
           />
         </div>
       </ListRowEdgeAccent>
@@ -179,13 +165,8 @@ function ArchivedProjectRow({
   );
 }
 
-function SortableNormProjectRow({
-  proj,
-  deleteProject,
-}: {
-  proj: ProgramProjectsDragProject;
-  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
-}) {
+function SortableNormProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
+  const router = useRouter();
   const {
     attributes,
     listeners,
@@ -237,13 +218,11 @@ function SortableNormProjectRow({
               />
             </div>
           </div>
-          <ConfirmDeleteForm
-            action={deleteProject.bind(null, proj.id)}
-            title="このプロジェクトを削除しますか？"
-            description="配下のタスクもすべて削除されます。"
-            triggerLabel="削除"
-            confirmLabel="削除する"
-            triggerVariant="destructive"
+          <ProgramProjectDeleteConfirm
+            projectId={proj.id}
+            onDeleted={() => {
+              router.refresh();
+            }}
           />
         </div>
       </ListRowEdgeAccent>
@@ -254,11 +233,9 @@ function SortableNormProjectRow({
 function ProgramProjectsDragDndInner({
   programId,
   sortablesFromProp,
-  deleteProject,
 }: {
   programId: string;
   sortablesFromProp: ProgramProjectsDragProject[];
-  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
   const [orderedSortables, setOrderedSortables] = useState(sortablesFromProp);
@@ -306,11 +283,7 @@ function ProgramProjectsDragDndInner({
       <SortableContext items={orderedSortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
         <>
           {orderedSortables.map((proj) => (
-            <SortableNormProjectRow
-              key={proj.id}
-              proj={proj}
-              deleteProject={deleteProject}
-            />
+            <SortableNormProjectRow key={proj.id} proj={proj} />
           ))}
         </>
       </SortableContext>
@@ -322,12 +295,10 @@ export function ProgramProjectsDragList({
   programId,
   projectsOrdered,
   archivedProjects = [],
-  deleteProject,
 }: {
   programId: string;
   projectsOrdered: ProgramProjectsDragProject[];
   archivedProjects?: ProgramProjectsDragProject[];
-  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
 }) {
   const dndReady = useIsClient();
 
@@ -350,15 +321,10 @@ export function ProgramProjectsDragList({
             key={serverOrderKey}
             programId={programId}
             sortablesFromProp={sortablesFromProp}
-            deleteProject={deleteProject}
           />
         ) : (
           sortablesFromProp.map((proj) => (
-            <FrozenNormProjectRow
-              key={proj.id}
-              proj={proj}
-              deleteProject={deleteProject}
-            />
+            <FrozenNormProjectRow key={proj.id} proj={proj} />
           ))
         )}
       </ul>
@@ -370,7 +336,7 @@ export function ProgramProjectsDragList({
             data-testid="program-archived-projects"
           >
             {archivedProjects.map((proj) => (
-              <ArchivedProjectRow key={proj.id} proj={proj} deleteProject={deleteProject} />
+              <ArchivedProjectRow key={proj.id} proj={proj} />
             ))}
           </ul>
         </div>
