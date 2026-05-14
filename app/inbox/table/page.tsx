@@ -40,12 +40,11 @@ export default async function InboxTablePage() {
       ) : (
         <>
           <section className="max-w-3xl">
-            <InboxQuickAdd returnPath="/inbox/table" />
+            <InboxQuickAdd />
           </section>
           <InboxTasksTable
             rows={rows}
             moveTargets={moveTargets}
-            returnPath="/inbox/table"
             priorityColors={priorityColors}
           />
         </>

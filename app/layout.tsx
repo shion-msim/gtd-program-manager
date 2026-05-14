@@ -47,7 +47,9 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <SearchParamsToast />
           </Suspense>
-          <Toaster />
+          <div data-testid="app-toaster">
+            <Toaster />
+          </div>
         </ThemeProvider>
       </body>
     </html>
