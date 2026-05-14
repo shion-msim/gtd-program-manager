@@ -147,21 +147,21 @@ export async function updateInboxTaskStay(
 export async function updateInboxTaskStatus(
   taskId: string,
   formData: FormData,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const existing = await taskInUserInbox(session.user.id, taskId);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const statusRaw = formData.get("status");
   if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
-    return;
+    return { ok: false };
   }
   if (statusRaw === "done") {
-    return;
+    return { ok: false };
   }
   await db
     .update(tasks)
@@ -171,6 +171,7 @@ export async function updateInboxTaskStatus(
     })
     .where(eq(tasks.id, taskId));
   revalidateInboxRelated(taskId);
+  return { ok: true };
 }
 
 export async function updateInboxTask(taskId: string, formData: FormData) {
@@ -208,6 +209,7 @@ export async function moveInboxTaskToProject(taskId: string, formData: FormData)
         eq(projects.id, targetRaw),
         eq(projects.userId, session.user.id),
         eq(projects.isInbox, false),
+        eq(projects.isArchived, false),
       ),
     )
     .limit(1);

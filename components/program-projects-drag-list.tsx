@@ -18,22 +18,24 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { Archive, GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { projects } from "@/db/schema";
 import { reorderProjectsInProgram } from "@/lib/navigation-order-actions";
 
 import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { ProjectEditDialog } from "@/components/project-edit-dialog";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
-import { normalizeHexColor } from "@/lib/hex-color";
+import { resolveAccentToken } from "@/lib/design-tokens";
+import { useIsClient } from "@/lib/use-is-client";
 import { cn } from "@/lib/utils";
 
 export type ProgramProjectsDragProject = Pick<
   InferSelectModel<typeof projects>,
-  "id" | "name" | "accentColor" | "isInbox"
+  "id" | "name" | "accentColor" | "isInbox" | "isArchived"
 >;
 
 function FrozenInboxProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
@@ -41,9 +43,7 @@ function FrozenInboxProjectRow({ proj }: { proj: ProgramProjectsDragProject }) {
     <li className="flex min-w-0">
       <ListRowEdgeAccent
         as="div"
-        entityColor={
-          proj.accentColor ? normalizeHexColor(proj.accentColor) : null
-        }
+        entityColor={resolveAccentToken(proj.accentColor)}
         priorityColor={null}
         className="min-w-0 flex-1"
       >
@@ -86,9 +86,7 @@ function FrozenNormProjectRow({
       </div>
       <ListRowEdgeAccent
         as="div"
-        entityColor={
-          proj.accentColor ? normalizeHexColor(proj.accentColor) : null
-        }
+        entityColor={resolveAccentToken(proj.accentColor)}
         priorityColor={null}
         className="min-w-0 flex-1"
       >
@@ -107,6 +105,62 @@ function FrozenNormProjectRow({
                   id: proj.id,
                   name: proj.name,
                   accentColor: proj.accentColor,
+                  isArchived: proj.isArchived,
+                }}
+              />
+            </div>
+          </div>
+          <ConfirmDeleteForm
+            action={deleteProject.bind(null, proj.id)}
+            title="このプロジェクトを削除しますか？"
+            description="配下のタスクもすべて削除されます。"
+            triggerLabel="削除"
+            confirmLabel="削除する"
+            triggerVariant="destructive"
+          />
+        </div>
+      </ListRowEdgeAccent>
+    </li>
+  );
+}
+
+function ArchivedProjectRow({
+  proj,
+  deleteProject,
+}: {
+  proj: ProgramProjectsDragProject;
+  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
+}) {
+  return (
+    <li className="flex min-w-0">
+      <div
+        className="bg-muted/20 text-muted-foreground shrink-0 self-stretch border-r border-border px-1.5 flex flex-col items-center justify-center"
+        title="アーカイブ済み（並べ替え対象外）"
+      >
+        <Archive className="size-4 opacity-60" aria-hidden />
+      </div>
+      <ListRowEdgeAccent
+        as="div"
+        entityColor={resolveAccentToken(proj.accentColor)}
+        priorityColor={null}
+        className="bg-muted/10 min-w-0 flex-1"
+      >
+        <div className="space-y-3 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-muted-foreground min-w-0 font-medium">{proj.name}</p>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Link
+                href={`/projects/${proj.id}`}
+                className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+              >
+                タスク一覧
+              </Link>
+              <ProjectEditDialog
+                project={{
+                  id: proj.id,
+                  name: proj.name,
+                  accentColor: proj.accentColor,
+                  isArchived: proj.isArchived,
                 }}
               />
             </div>
@@ -159,9 +213,7 @@ function SortableNormProjectRow({
       </button>
       <ListRowEdgeAccent
         as="div"
-        entityColor={
-          proj.accentColor ? normalizeHexColor(proj.accentColor) : null
-        }
+        entityColor={resolveAccentToken(proj.accentColor)}
         priorityColor={null}
         className="min-w-0 flex-1"
       >
@@ -180,6 +232,7 @@ function SortableNormProjectRow({
                   id: proj.id,
                   name: proj.name,
                   accentColor: proj.accentColor,
+                  isArchived: proj.isArchived,
                 }}
               />
             </div>
@@ -198,28 +251,17 @@ function SortableNormProjectRow({
   );
 }
 
-export function ProgramProjectsDragList({
+function ProgramProjectsDragDndInner({
   programId,
-  projectsOrdered,
+  sortablesFromProp,
   deleteProject,
 }: {
   programId: string;
-  projectsOrdered: ProgramProjectsDragProject[];
+  sortablesFromProp: ProgramProjectsDragProject[];
   deleteProject: (projectId: string, formData: FormData) => Promise<void>;
 }) {
   const router = useRouter();
-  const [dndReady, setDndReady] = useState(false);
-  useEffect(() => {
-    setDndReady(true);
-  }, []);
-
-  const inboxRows = projectsOrdered.filter((p) => p.isInbox);
-  const inboxProj = inboxRows[0];
-  const sortables = inboxProj
-    ? projectsOrdered.filter((p) => !p.isInbox)
-    : projectsOrdered;
-
-  const draggableIds = sortables.map((p) => p.id);
+  const [orderedSortables, setOrderedSortables] = useState(sortablesFromProp);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -228,47 +270,111 @@ export function ProgramProjectsDragList({
     }),
   );
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) {
       return;
     }
-    const oldIndex = draggableIds.indexOf(String(active.id));
-    const newIndex = draggableIds.indexOf(String(over.id));
+    const ids = orderedSortables.map((p) => p.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) {
       return;
     }
-    const nextOrder = arrayMove(draggableIds, oldIndex, newIndex);
-    await reorderProjectsInProgram(programId, nextOrder);
-    router.refresh();
+    const prev = orderedSortables;
+    const nextSortables = arrayMove(orderedSortables, oldIndex, newIndex);
+    setOrderedSortables(nextSortables);
+    const nextOrder = nextSortables.map((p) => p.id);
+    void (async () => {
+      try {
+        const r = await reorderProjectsInProgram(programId, nextOrder);
+        if (!r.ok) {
+          setOrderedSortables(prev);
+          toast.error("並べ替えを保存できませんでした");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setOrderedSortables(prev);
+        toast.error("並べ替えを保存できませんでした");
+      }
+    })();
   }
 
   return (
-    <ul className="divide-border divide-y overflow-hidden rounded-lg border" data-testid="program-projects-list">
-      {inboxProj ? <FrozenInboxProjectRow proj={inboxProj} /> : null}
-      {dndReady ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={sortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <>
-              {sortables.map((proj) => (
-                <SortableNormProjectRow
-                  key={proj.id}
-                  proj={proj}
-                  deleteProject={deleteProject}
-                />
-              ))}
-            </>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        sortables.map((proj) => (
-          <FrozenNormProjectRow
-            key={proj.id}
-            proj={proj}
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={orderedSortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+        <>
+          {orderedSortables.map((proj) => (
+            <SortableNormProjectRow
+              key={proj.id}
+              proj={proj}
+              deleteProject={deleteProject}
+            />
+          ))}
+        </>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+export function ProgramProjectsDragList({
+  programId,
+  projectsOrdered,
+  archivedProjects = [],
+  deleteProject,
+}: {
+  programId: string;
+  projectsOrdered: ProgramProjectsDragProject[];
+  archivedProjects?: ProgramProjectsDragProject[];
+  deleteProject: (projectId: string, formData: FormData) => Promise<void>;
+}) {
+  const dndReady = useIsClient();
+
+  const inboxProj = useMemo(
+    () => projectsOrdered.find((p) => p.isInbox),
+    [projectsOrdered],
+  );
+  const sortablesFromProp = useMemo(
+    () => (inboxProj ? projectsOrdered.filter((p) => !p.isInbox) : projectsOrdered),
+    [projectsOrdered, inboxProj],
+  );
+  const serverOrderKey = sortablesFromProp.map((p) => p.id).join("|");
+
+  return (
+    <div className="space-y-6">
+      <ul className="divide-border divide-y overflow-hidden rounded-lg border" data-testid="program-projects-list">
+        {inboxProj ? <FrozenInboxProjectRow proj={inboxProj} /> : null}
+        {dndReady ? (
+          <ProgramProjectsDragDndInner
+            key={serverOrderKey}
+            programId={programId}
+            sortablesFromProp={sortablesFromProp}
             deleteProject={deleteProject}
           />
-        ))
-      )}
-    </ul>
+        ) : (
+          sortablesFromProp.map((proj) => (
+            <FrozenNormProjectRow
+              key={proj.id}
+              proj={proj}
+              deleteProject={deleteProject}
+            />
+          ))
+        )}
+      </ul>
+      {archivedProjects.length > 0 ? (
+        <div className="space-y-2">
+          <h3 className="text-muted-foreground text-sm font-medium">アーカイブ済み</h3>
+          <ul
+            className="divide-border divide-y overflow-hidden rounded-lg border"
+            data-testid="program-archived-projects"
+          >
+            {archivedProjects.map((proj) => (
+              <ArchivedProjectRow key={proj.id} proj={proj} deleteProject={deleteProject} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }

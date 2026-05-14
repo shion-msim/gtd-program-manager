@@ -2,9 +2,7 @@ import { CornerDownLeft } from "lucide-react";
 import { addInboxTask } from "@/app/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { InboxReturnPath } from "@/lib/inbox-return-path";
-
-export function InboxQuickAdd({ returnPath }: { returnPath: InboxReturnPath }) {
+export function InboxQuickAdd({ returnPath }: { returnPath: string }) {
   return (
     <form action={addInboxTask} className="space-y-2" data-testid="inbox-quick-add">
       <div className="flex items-stretch gap-2">

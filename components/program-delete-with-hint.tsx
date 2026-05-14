@@ -87,13 +87,11 @@ export function ProgramDeleteWithHint({
     hintVisible && hintPos && typeof document !== "undefined"
       ? createPortal(
           <div
-            className="text-muted-foreground pointer-events-auto rounded-md border border-border bg-popover p-2 text-xs leading-relaxed shadow-sm"
+            className="token-z-tooltip text-muted-foreground pointer-events-auto w-72 rounded-md border border-border bg-popover p-2 text-xs leading-relaxed shadow-sm"
             style={{
               position: "fixed",
               top: hintPos.top,
               left: hintPos.left,
-              width: HINT_WIDTH_PX,
-              zIndex: 99999,
             }}
             onMouseEnter={showHint}
             onMouseLeave={scheduleHideHint}

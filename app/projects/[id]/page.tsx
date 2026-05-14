@@ -53,7 +53,7 @@ export default async function ProjectTasksPage({ params }: Props) {
   }
 
   if (ctx.project.isInbox) {
-    redirect("/inbox");
+    redirect("/inbox/table");
   }
 
   const [openRows, doneRows, moveTargets, priorityColors] = await Promise.all([
@@ -91,8 +91,14 @@ export default async function ProjectTasksPage({ params }: Props) {
         <p className="text-muted-foreground text-sm">
           一覧では状態だけ変更できます。タイトルやメモは「編集」から。移動もここから行えます。
         </p>
+        {ctx.project.isArchived ? (
+          <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm">
+            このプロジェクトはアーカイブ中です。サイドバーには表示されず、ここからタスクの整理・移動は引き続きできます。新規タスクの追加はプログラム画面でアーカイブを解除してください。
+          </p>
+        ) : null}
       </header>
 
+      {!ctx.project.isArchived ? (
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="text-sm font-medium">タスクを追加</h2>
         <form action={addProjectTask.bind(null, projectId)} className="flex flex-wrap items-end gap-2">
@@ -116,6 +122,7 @@ export default async function ProjectTasksPage({ params }: Props) {
           既定の状態は「次の行動」です。追加後、一覧の状態または「編集」で更新できます。
         </p>
       </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium">未完了</h2>
@@ -151,6 +158,7 @@ export default async function ProjectTasksPage({ params }: Props) {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <TaskStatusInlineForm
+                    key={`${t.id}-${t.status}`}
                     action={updateProjectTaskStatus.bind(null, t.id, projectId)}
                     defaultStatus={t.status}
                     options={PROJECT_TASK_STATUS_OPTIONS}
@@ -172,7 +180,7 @@ export default async function ProjectTasksPage({ params }: Props) {
                       action={moveProjectTask.bind(null, t.id, projectId)}
                       className="flex flex-wrap items-end gap-2"
                     >
-                      <div className="min-w-[12rem] flex-1">
+                      <div className="token-move-target-min flex-1">
                         <label htmlFor={`pt-move-${t.id}`} className="sr-only">
                           移動先
                         </label>
@@ -232,6 +240,7 @@ export default async function ProjectTasksPage({ params }: Props) {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <TaskStatusInlineForm
+                      key={`${t.id}-${t.status}`}
                       action={updateProjectTaskStatus.bind(null, t.id, projectId)}
                       defaultStatus={t.status}
                       options={PROJECT_TASK_STATUS_OPTIONS}

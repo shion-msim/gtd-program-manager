@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
 import { nextProjectNavSortIndexForProgram } from "@/lib/nav-sort-keys";
-import { parseOptionalHexColor } from "@/lib/hex-color";
+import { parseOptionalAccentToken } from "@/lib/design-tokens";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
 async function projectForUser(projectId: string, userId: string) {
@@ -74,12 +74,14 @@ export async function updateProject(
   const clearAccent = formData.get("clearAccent") === "on";
   const accentColor = clearAccent
     ? null
-    : parseOptionalHexColor(formData.get("accentColor"));
+    : parseOptionalAccentToken(formData.get("accentColor"));
+  const isArchived = formData.get("isArchived") === "on";
   await db
     .update(projects)
     .set({
       name,
       accentColor,
+      isArchived,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));

@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { userAppSettings } from "@/db/schema";
-import { normalizeHexColor } from "@/lib/hex-color";
+import { isAccentToken } from "@/lib/design-tokens";
 import type { PriorityColorMap } from "@/lib/task-row-accent";
-import { DEFAULT_PRIORITY_COLORS, TASK_PRIORITIES } from "@/lib/task-priority";
+import { DEFAULT_PRIORITY_TOKENS, TASK_PRIORITIES } from "@/lib/task-priority";
 
 function parseStoredJson(raw: string): Partial<PriorityColorMap> {
   try {
@@ -14,11 +14,8 @@ function parseStoredJson(raw: string): Partial<PriorityColorMap> {
     const out: Partial<PriorityColorMap> = {};
     for (const k of TASK_PRIORITIES) {
       const v = (o as Record<string, unknown>)[k];
-      if (typeof v === "string") {
-        const n = normalizeHexColor(v);
-        if (n) {
-          out[k] = n;
-        }
+      if (typeof v === "string" && isAccentToken(v)) {
+        out[k] = v;
       }
     }
     return out;
@@ -37,7 +34,7 @@ export async function getPriorityColorsForUser(
     .where(eq(userAppSettings.userId, userId))
     .limit(1);
   const overrides = row?.json ? parseStoredJson(row.json) : {};
-  return { ...DEFAULT_PRIORITY_COLORS, ...overrides };
+  return { ...DEFAULT_PRIORITY_TOKENS, ...overrides };
 }
 
 export type { PriorityColorMap } from "@/lib/task-row-accent";

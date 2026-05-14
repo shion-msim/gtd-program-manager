@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { CaptureNowFabHost } from "@/components/capture-now-fab";
 
 const STORAGE_KEY = "kernie-sidebar-collapsed";
 
@@ -72,7 +73,7 @@ export function AuthenticatedChrome({
         <aside
           className={cn(
             "bg-muted/20 border-border hidden shrink-0 flex-col border-r md:flex",
-            hydrated && collapsed ? "w-[3.25rem]" : "w-60",
+            hydrated && collapsed ? "w-13" : "w-60",
           )}
         >
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -110,7 +111,7 @@ export function AuthenticatedChrome({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="w-[min(100%,18rem)] max-w-[min(100%,18rem)] p-0 sm:max-w-[min(100%,18rem)]"
+            className="w-full max-w-72 p-0 sm:max-w-72"
             showCloseButton
           >
             <SheetHeader className="sr-only">
@@ -127,6 +128,10 @@ export function AuthenticatedChrome({
 
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div>
       </div>
+
+      <React.Suspense fallback={null}>
+        <CaptureNowFabHost />
+      </React.Suspense>
     </div>
   );
 }

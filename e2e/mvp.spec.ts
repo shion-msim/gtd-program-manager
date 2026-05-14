@@ -21,7 +21,9 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
   test("B: Inbox にタスクを追加", async ({ page }) => {
     await loginAsE2e(page);
     await page.goto("/inbox");
+    await expect(page).toHaveURL(/\/inbox\/table/);
     const label = `e2e-inbox-${Date.now()}`;
+    await page.getByTestId("capture-now-fab").click();
     await page.getByPlaceholder("1 行でタスクを追加").fill(label);
     await page.getByRole("button", { name: "追加（Enter）" }).click();
     await expect(page.getByText("追加しました")).toBeVisible();

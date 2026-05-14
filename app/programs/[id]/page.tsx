@@ -35,10 +35,14 @@ export default async function ProgramDetailPage({ params }: Props) {
       name: projects.name,
       accentColor: projects.accentColor,
       isInbox: projects.isInbox,
+      isArchived: projects.isArchived,
     })
     .from(projects)
     .where(eq(projects.programId, programId))
     .orderBy(asc(projects.navSortIndex), asc(projects.name));
+
+  const activeProjectRows = projectRows.filter((p) => !p.isArchived);
+  const archivedProjectRows = projectRows.filter((p) => !p.isInbox && p.isArchived);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
@@ -78,12 +82,13 @@ export default async function ProgramDetailPage({ params }: Props) {
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium">プロジェクト一覧</h2>
-        {projectRows.length === 0 ? (
+        {activeProjectRows.length === 0 && archivedProjectRows.length === 0 ? (
           <p className="text-muted-foreground text-sm">まだプロジェクトがありません。</p>
         ) : (
           <ProgramProjectsDragList
             programId={programId}
-            projectsOrdered={projectRows}
+            projectsOrdered={activeProjectRows}
+            archivedProjects={archivedProjectRows}
             deleteProject={deleteProject}
           />
         )}

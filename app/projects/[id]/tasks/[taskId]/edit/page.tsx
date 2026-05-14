@@ -101,8 +101,8 @@ export default async function ProjectTaskEditPage({ params }: Props) {
                 defaultValue={task.note ?? ""}
               />
             </div>
-            <div className="flex flex-wrap gap-4">
-              <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-row">
+              <div className="token-form-field-col">
                 <Label htmlFor="dueOn">〆切</Label>
                 <Input
                   id="dueOn"
@@ -111,7 +111,7 @@ export default async function ProjectTaskEditPage({ params }: Props) {
                   defaultValue={dueForInput(task.dueOn ?? undefined)}
                 />
               </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
+              <div className="token-form-field-col">
                 <Label htmlFor="status">状態</Label>
                 <NativeSelect
                   id="status"
@@ -126,7 +126,7 @@ export default async function ProjectTaskEditPage({ params }: Props) {
                   ))}
                 </NativeSelect>
               </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
+              <div className="token-form-field-col">
                 <Label htmlFor="priority">優先度</Label>
                 <NativeSelect
                   id="priority"

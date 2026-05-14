@@ -21,7 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
-import { normalizeHexColor } from "@/lib/hex-color";
+import { accentEdgeClass, resolveAccentToken } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
 const TOP_NAV: {
@@ -106,17 +106,17 @@ export function AppSidebarBody({
           </p>
           <Accordion multiple defaultValue={[]} className="min-w-0 gap-2">
             {data.programs.map((program) => {
-              const accent = program.accentColor
-                ? normalizeHexColor(program.accentColor)
-                : null;
+              const accent = resolveAccentToken(program.accentColor);
               return (
               <AccordionItem key={program.id} value={program.id}>
                 <AccordionHeader className="px-0">
                   <AccordionTrigger className="border-0">
                     <span className="flex min-w-0 items-center gap-2">
                       <span
-                        className="h-4 w-1.5 shrink-0 rounded-sm bg-muted-foreground/25"
-                        style={accent ? { backgroundColor: accent } : undefined}
+                        className={cn(
+                          "h-4 w-1.5 shrink-0 rounded-sm",
+                          accentEdgeClass(accent),
+                        )}
                         aria-hidden
                       />
                       <span className="truncate">{program.name}</span>
@@ -157,7 +157,7 @@ export function AppSidebarBody({
                       <p className="text-muted-foreground px-1 text-xs font-medium">
                         未割り当てのタスク
                       </p>
-                      <p className="text-muted-foreground px-1 text-[0.7rem] leading-snug">
+                      <p className="text-muted-foreground px-1 text-xs leading-snug">
                         プロジェクトへ移動すると整理済みになります。
                       </p>
                       {program.inboxOpenTasks.length === 0 ? (

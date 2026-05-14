@@ -23,6 +23,9 @@ export async function GET(request: Request) {
   const dueAfter = searchParams.get("dueAfter");
 
   const condList = [eq(projects.userId, userId)];
+  if (!projectId) {
+    condList.push(eq(projects.isArchived, false));
+  }
   if (projectId) {
     condList.push(eq(tasks.projectId, projectId));
   }
@@ -94,13 +97,13 @@ export async function POST(request: Request) {
       return badRequest("projectId が不正です");
     }
     const [p] = await db
-      .select({ id: projects.id })
+      .select({ id: projects.id, isInbox: projects.isInbox, isArchived: projects.isArchived })
       .from(projects)
       .where(
         and(eq(projects.id, o.projectId), eq(projects.userId, userId)),
       )
       .limit(1);
-    if (!p) {
+    if (!p || (!p.isInbox && p.isArchived)) {
       return notFound();
     }
     projectId = o.projectId;

@@ -66,7 +66,7 @@ export async function addProjectTask(projectId: string, formData: FormData) {
     return;
   }
   const proj = await nonInboxProjectForUser(projectId, session.user.id);
-  if (!proj) {
+  if (!proj || proj.isArchived) {
     return;
   }
   const titleRaw = formData.get("title");
@@ -170,22 +170,22 @@ export async function updateProjectTaskStatus(
   taskId: string,
   projectId: string,
   formData: FormData,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const proj = await nonInboxProjectForUser(projectId, session.user.id);
   if (!proj) {
-    return;
+    return { ok: false };
   }
   const existing = await taskInProject(taskId, projectId, session.user.id);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const statusRaw = formData.get("status");
   if (typeof statusRaw !== "string" || !isTaskStatus(statusRaw)) {
-    return;
+    return { ok: false };
   }
   await db
     .update(tasks)
@@ -195,6 +195,7 @@ export async function updateProjectTaskStatus(
     })
     .where(eq(tasks.id, taskId));
   revalidateTaskSurfaces(projectId, proj.programId, taskId);
+  return { ok: true };
 }
 
 export async function updateProjectTask(
@@ -248,6 +249,9 @@ export async function moveProjectTask(
     )
     .limit(1);
   if (!target || target.id === fromProjectId) {
+    return;
+  }
+  if (!target.isInbox && target.isArchived) {
     return;
   }
   let nextStatus = existing.status;

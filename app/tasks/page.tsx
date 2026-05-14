@@ -83,6 +83,7 @@ export default async function TasksIndexPage() {
                 {row.isInbox ? (
                   <>
                     <TaskStatusInlineForm
+                      key={`${row.taskId}-${row.status}`}
                       action={updateInboxTaskStatus.bind(null, row.taskId)}
                       defaultStatus={row.status}
                       options={INBOX_STATUS_OPTIONS}
@@ -102,6 +103,7 @@ export default async function TasksIndexPage() {
                 ) : (
                   <>
                     <TaskStatusInlineForm
+                      key={`${row.taskId}-${row.status}`}
                       action={updateProjectTaskStatus.bind(
                         null,
                         row.taskId,

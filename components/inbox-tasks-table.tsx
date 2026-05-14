@@ -10,6 +10,7 @@ import {
 import type { InboxOpenTaskRow } from "@/lib/inbox-tasks";
 import type { PriorityColorMap } from "@/lib/task-row-accent";
 import { priorityStripeColor, resolveTaskEntityAccent } from "@/lib/task-row-accent";
+import { accentEdgeClass } from "@/lib/design-tokens";
 import {
   completeInboxTask,
   moveInboxTaskToProject,
@@ -41,30 +42,30 @@ export function InboxTasksTable({
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm" data-testid="inbox-empty">
-        未整理のタスクはまだありません。受信箱の入力欄から追加できます。
+        未整理のタスクはまだありません。右下の＋または下の入力欄から追加できます。
       </p>
     );
   }
 
   return (
     <div className="overflow-x-auto rounded-lg border" data-testid="inbox-list">
-      <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
+      <table className="token-table-min w-full border-collapse text-left text-sm">
         <thead>
           <tr className="bg-muted/80 border-b text-xs font-medium tracking-wide text-muted-foreground">
             <th scope="col" className="w-0 p-0 font-medium" aria-label="色" />
             <th scope="col" className="px-3 py-2.5 font-medium">
               タイトル
             </th>
-            <th scope="col" className="w-[7.5rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-due px-3 py-2.5 font-medium">
               〆切
             </th>
-            <th scope="col" className="w-[10.5rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-status px-3 py-2.5 font-medium">
               状態
             </th>
-            <th scope="col" className="min-w-[14rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-target px-3 py-2.5 font-medium">
               移動先
             </th>
-            <th scope="col" className="w-[11rem] px-3 py-2.5 text-right font-medium">
+            <th scope="col" className="token-col-action px-3 py-2.5 text-right font-medium">
               操作
             </th>
           </tr>
@@ -79,22 +80,16 @@ export function InboxTasksTable({
             return (
             <tr key={t.id} className="align-middle" data-task-title={t.title}>
               <td className="w-0 p-0 align-stretch">
-                <div className="flex h-full min-h-[2.75rem]" aria-hidden>
+                <div className="flex h-full min-h-11" aria-hidden>
                   <span
-                    className="w-1.5 self-stretch bg-muted-foreground/25"
-                    style={
-                      entityColor ? { backgroundColor: entityColor } : undefined
-                    }
+                    className={`w-1.5 self-stretch ${accentEdgeClass(entityColor)}`}
                   />
                   {pColor ? (
-                    <span
-                      className="w-1 self-stretch"
-                      style={{ backgroundColor: pColor }}
-                    />
+                    <span className={`w-1 self-stretch ${accentEdgeClass(pColor)}`} />
                   ) : null}
                 </div>
               </td>
-              <td className="max-w-[20rem] px-3 py-2">
+              <td className="token-col-title-max px-3 py-2">
                 <p className="font-medium leading-snug">{t.title}</p>
               </td>
               <td className="text-muted-foreground whitespace-nowrap px-3 py-2 text-xs">
@@ -102,6 +97,7 @@ export function InboxTasksTable({
               </td>
               <td className="px-3 py-2">
                 <TaskStatusInlineForm
+                  key={`${t.id}-${t.status}`}
                   action={updateInboxTaskStatus.bind(null, t.id)}
                   defaultStatus={t.status}
                   options={INBOX_STATUS_OPTIONS}
@@ -121,7 +117,7 @@ export function InboxTasksTable({
                       required
                       data-testid="inbox-move-target"
                       defaultValue=""
-                      className="min-w-[12rem] flex-1 text-sm"
+                      className="token-move-target-min flex-1 text-sm"
                     >
                       <option value="">選択…</option>
                       {moveTargets.map((m) => (
