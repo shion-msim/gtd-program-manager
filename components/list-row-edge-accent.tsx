@@ -1,12 +1,16 @@
 import { cn } from "@/lib/utils";
+import {
+  accentEdgeClass,
+  type AccentToken,
+} from "@/lib/design-tokens";
 
 type Tag = "li" | "div" | "tr";
 
 type Props = {
   /** プロジェクト／プログラム由来の左帯（未設定はテーマの muted 帯） */
-  entityColor: string | null;
+  entityColor: AccentToken | null;
   /** 優先度帯（null のときは帯色なし・幅は他行と揃えるため確保） */
-  priorityColor: string | null;
+  priorityColor: AccentToken | null;
   children: React.ReactNode;
   className?: string;
   as?: Tag;
@@ -26,18 +30,9 @@ export function ListRowEdgeAccent({
     <Tag className={cn("flex min-w-0 items-stretch", className)}>
       <div className="flex shrink-0" aria-hidden>
         <span
-          className={cn(
-            "w-1.5 self-stretch",
-            !entityColor && "bg-muted-foreground/25",
-          )}
-          style={entityColor ? { backgroundColor: entityColor } : undefined}
+          className={cn("w-1.5 self-stretch", accentEdgeClass(entityColor))}
         />
-        <span
-          className="w-1 self-stretch"
-          style={
-            priorityColor ? { backgroundColor: priorityColor } : undefined
-          }
-        />
+        <span className={cn("w-1 self-stretch", accentEdgeClass(priorityColor))} />
       </div>
       <div className="min-w-0 flex-1">{children}</div>
     </Tag>

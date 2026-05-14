@@ -21,13 +21,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { programs } from "@/db/schema";
 import { reorderProgramsForNavigation } from "@/lib/navigation-order-actions";
 import { ProgramDeleteWithHint } from "@/components/program-delete-with-hint";
 import { ProgramEditDialog } from "@/components/program-edit-dialog";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { normalizeHexColor } from "@/lib/hex-color";
+import { accentEdgeClass, resolveAccentToken } from "@/lib/design-tokens";
+import { useIsClient } from "@/lib/use-is-client";
 import { cn } from "@/lib/utils";
 
 export type ProgramsDragReorderListItem = Pick<
@@ -38,16 +40,13 @@ export type ProgramsDragReorderListItem = Pick<
 function FrozenProgramRow({
   program,
   isInboxProgram,
-  deleteAction,
+  deleteProgram,
 }: {
   program: ProgramsDragReorderListItem;
   isInboxProgram: boolean;
-  deleteAction: (formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
-  const accent =
-    program.accentColor !== null && program.accentColor !== undefined
-      ? normalizeHexColor(program.accentColor)
-      : null;
+  const accent = resolveAccentToken(program.accentColor);
 
   const deleteHint =
     isInboxProgram ? (
@@ -71,8 +70,7 @@ function FrozenProgramRow({
           aria-hidden
         />
         <div
-          className="w-1.5 shrink-0 self-stretch bg-muted-foreground/25"
-          style={accent ? { backgroundColor: accent } : undefined}
+          className={cn("w-1.5 shrink-0 self-stretch", accentEdgeClass(accent))}
           aria-hidden
         />
         <Card size="sm" className="flex-1 rounded-none border-0 shadow-none ring-0">
@@ -103,7 +101,7 @@ function FrozenProgramRow({
               />
               <ProgramDeleteWithHint
                 programId={program.id}
-                action={deleteAction}
+                deleteProgram={deleteProgram}
                 disabled={isInboxProgram}
                 disabledHint={deleteHint}
               />
@@ -117,10 +115,10 @@ function FrozenProgramRow({
 
 function SortableProgramRow({
   program,
-  deleteAction,
+  deleteProgram,
 }: {
   program: ProgramsDragReorderListItem;
-  deleteAction: (formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
   const {
     attributes,
@@ -136,10 +134,7 @@ function SortableProgramRow({
     transition,
   };
 
-  const accent =
-    program.accentColor !== null && program.accentColor !== undefined
-      ? normalizeHexColor(program.accentColor)
-      : null;
+  const accent = resolveAccentToken(program.accentColor);
 
   return (
     <li ref={setNodeRef} style={style} className={cn(isDragging && "z-50")}>
@@ -154,8 +149,7 @@ function SortableProgramRow({
           <GripVertical className="size-4" aria-hidden />
         </button>
         <div
-          className="w-1.5 shrink-0 self-stretch bg-muted-foreground/25"
-          style={accent ? { backgroundColor: accent } : undefined}
+          className={cn("w-1.5 shrink-0 self-stretch", accentEdgeClass(accent))}
           aria-hidden
         />
         <Card size="sm" className="flex-1 rounded-none border-0 shadow-none ring-0">
@@ -184,15 +178,73 @@ function SortableProgramRow({
                 }}
                 disabled={false}
               />
-              <ProgramDeleteWithHint
-                programId={program.id}
-                action={deleteAction}
-              />
+              <ProgramDeleteWithHint programId={program.id} deleteProgram={deleteProgram} />
             </div>
           </CardHeader>
         </Card>
       </div>
     </li>
+  );
+}
+
+function ProgramsDragReorderDndInner({
+  sortablesFromProp,
+  deleteProgram,
+}: {
+  sortablesFromProp: ProgramsDragReorderListItem[];
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
+}) {
+  const router = useRouter();
+  const [orderedSortables, setOrderedSortables] = useState(sortablesFromProp);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+    const ids = orderedSortables.map((p) => p.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+    const prev = orderedSortables;
+    const nextSortables = arrayMove(orderedSortables, oldIndex, newIndex);
+    setOrderedSortables(nextSortables);
+    const nextDragOrder = nextSortables.map((p) => p.id);
+    void (async () => {
+      try {
+        const r = await reorderProgramsForNavigation(nextDragOrder);
+        if (!r.ok) {
+          setOrderedSortables(prev);
+          toast.error("並べ替えを保存できませんでした");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setOrderedSortables(prev);
+        toast.error("並べ替えを保存できませんでした");
+      }
+    })();
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={orderedSortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+        <>
+          {orderedSortables.map((p) => (
+            <SortableProgramRow key={p.id} program={p} deleteProgram={deleteProgram} />
+          ))}
+        </>
+      </SortableContext>
+    </DndContext>
   );
 }
 
@@ -203,45 +255,18 @@ export function ProgramsDragReorderList({
 }: {
   inboxProgramId: string | null;
   programsOrdered: ProgramsDragReorderListItem[];
-  deleteProgram: (programId: string, formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
 }) {
-  const router = useRouter();
-  const [dndReady, setDndReady] = useState(false);
-  useEffect(() => {
-    setDndReady(true);
-  }, []);
+  const dndReady = useIsClient();
 
-  const draggableIds =
-    inboxProgramId === null
-      ? programsOrdered.map((p) => p.id)
-      : programsOrdered.filter((p) => p.id !== inboxProgramId).map((p) => p.id);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+  const sortablesFromProp = useMemo(
+    () =>
+      inboxProgramId === null
+        ? programsOrdered
+        : programsOrdered.filter((p) => p.id !== inboxProgramId),
+    [programsOrdered, inboxProgramId],
   );
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      return;
-    }
-    const oldIndex = draggableIds.indexOf(String(active.id));
-    const newIndex = draggableIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) {
-      return;
-    }
-    const nextDragOrder = arrayMove(draggableIds, oldIndex, newIndex);
-    await reorderProgramsForNavigation(nextDragOrder);
-    router.refresh();
-  }
-
-  const sortables =
-    inboxProgramId === null
-      ? programsOrdered
-      : programsOrdered.filter((p) => p.id !== inboxProgramId);
+  const serverOrderKey = sortablesFromProp.map((p) => p.id).join("|");
 
   const inboxRow =
     inboxProgramId !== null
@@ -254,30 +279,22 @@ export function ProgramsDragReorderList({
         <FrozenProgramRow
           program={inboxRow}
           isInboxProgram
-          deleteAction={deleteProgram.bind(null, inboxRow.id)}
+          deleteProgram={deleteProgram}
         />
       ) : null}
       {dndReady ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={sortables.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-            <>
-              {sortables.map((p) => (
-                <SortableProgramRow
-                  key={p.id}
-                  program={p}
-                  deleteAction={deleteProgram.bind(null, p.id)}
-                />
-              ))}
-            </>
-          </SortableContext>
-        </DndContext>
+        <ProgramsDragReorderDndInner
+          key={serverOrderKey}
+          sortablesFromProp={sortablesFromProp}
+          deleteProgram={deleteProgram}
+        />
       ) : (
-        sortables.map((p) => (
+        sortablesFromProp.map((p) => (
           <FrozenProgramRow
             key={p.id}
             program={p}
             isInboxProgram={false}
-            deleteAction={deleteProgram.bind(null, p.id)}
+            deleteProgram={deleteProgram}
           />
         ))
       )}

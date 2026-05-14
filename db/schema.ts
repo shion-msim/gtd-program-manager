@@ -67,6 +67,8 @@ export const projects = pgTable(
     name: text("name").notNull(),
     accentColor: text("accent_color"),
     isInbox: boolean("is_inbox").notNull().default(false),
+    /** ナビ・並べ替え対象から外す（タスクは参照可能） */
+    isArchived: boolean("is_archived").notNull().default(false),
     /** 同一プログラム内の並び（小さいほど上）。Inbox は常に 0 を想定 */
     navSortIndex: integer("nav_sort_index").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })

@@ -3,10 +3,21 @@
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const HIDE_DELAY_MS = 180;
 const HINT_WIDTH_PX = 288;
@@ -21,17 +32,20 @@ function clampHintLeft(left: number) {
 
 export function ProgramDeleteWithHint({
   programId,
-  action,
+  deleteProgram,
   disabled = false,
   disabledHint,
 }: {
   programId: string;
-  action: (formData: FormData) => Promise<void>;
+  deleteProgram: (programId: string) => Promise<{ ok: boolean }>;
   /** 受信箱プログラム用: ボタン表示のみ・操作不可 */
   disabled?: boolean;
   /** disabled 時、ゴミ箱ホバーで表示する説明 */
   disabledHint?: ReactNode;
 }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
   const [hintVisible, setHintVisible] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -87,13 +101,11 @@ export function ProgramDeleteWithHint({
     hintVisible && hintPos && typeof document !== "undefined"
       ? createPortal(
           <div
-            className="text-muted-foreground pointer-events-auto rounded-md border border-border bg-popover p-2 text-xs leading-relaxed shadow-sm"
+            className="token-z-tooltip text-muted-foreground pointer-events-auto w-72 rounded-md border border-border bg-popover p-2 text-xs leading-relaxed shadow-sm"
             style={{
               position: "fixed",
               top: hintPos.top,
               left: hintPos.left,
-              width: HINT_WIDTH_PX,
-              zIndex: 99999,
             }}
             onMouseEnter={showHint}
             onMouseLeave={scheduleHideHint}
@@ -116,6 +128,12 @@ export function ProgramDeleteWithHint({
           document.body,
         )
       : null;
+
+  const triggerButton = (
+    <Button type="button" variant="outline" size="icon-sm" aria-label="削除を試みる">
+      <Trash2 className="text-destructive" />
+    </Button>
+  );
 
   if (disabled) {
     return (
@@ -145,15 +163,44 @@ export function ProgramDeleteWithHint({
     <>
       <div ref={anchorRef} className="inline-flex">
         <div onMouseEnter={showHint} onMouseLeave={scheduleHideHint}>
-          <ConfirmDeleteForm
-            action={action}
-            title="このプログラムを削除しますか？"
-            description="プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。"
-            confirmLabel="削除する"
-            triggerVariant="outline"
-            triggerContent={<Trash2 className="text-destructive" />}
-            triggerAriaLabel="削除を試みる"
-          />
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger render={triggerButton} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>このプログラムを削除しますか？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  プログラムだけが削除され、中のプロジェクトやタスクは残ります（子がある場合は削除に失敗します）。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button">キャンセル</AlertDialogCancel>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      try {
+                        const r = await deleteProgram(programId);
+                        if (r.ok) {
+                          toast.success("削除しました");
+                          setOpen(false);
+                          router.refresh();
+                        } else {
+                          toast.error("削除できませんでした");
+                        }
+                      } catch {
+                        toast.error("削除できませんでした");
+                      }
+                    });
+                  }}
+                >
+                  {pending ? "削除中…" : "削除する"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       {floatingHint}

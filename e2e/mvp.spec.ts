@@ -21,11 +21,13 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
   test("B: Inbox にタスクを追加", async ({ page }) => {
     await loginAsE2e(page);
     await page.goto("/inbox");
+    await expect(page).toHaveURL(/\/inbox\/table/);
     const label = `e2e-inbox-${Date.now()}`;
-    await page.getByPlaceholder("1 行でタスクを追加").fill(label);
-    await page.getByRole("button", { name: "追加（Enter）" }).click();
-    await expect(page.getByText("追加しました")).toBeVisible();
-    await page.goto("/inbox/table");
+    await page.getByTestId("capture-now-fab").click();
+    const captureDialog = page.getByRole("dialog", { name: "いま拾う" });
+    await captureDialog.getByPlaceholder("1 行でタスクを追加").fill(label);
+    await captureDialog.getByRole("button", { name: "追加（Enter）" }).click();
+    await expect(page.getByTestId("app-toaster").getByText("追加しました")).toBeVisible();
     await expect(page.getByText(label, { exact: true })).toBeVisible();
   });
 
@@ -91,7 +93,7 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     const title = `e2e-ui-move-${Date.now()}`;
     await page.getByPlaceholder("1 行でタスクを追加").fill(title);
     await page.getByRole("button", { name: "追加（Enter）" }).click();
-    await expect(page.getByText("追加しました")).toBeVisible();
+    await expect(page.getByTestId("app-toaster").getByText("追加しました")).toBeVisible();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
 
     const row = page
@@ -135,6 +137,7 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     const label = `e2e-project-task-${Date.now()}`;
     await page.getByPlaceholder("次の行動として追加").fill(label);
     await page.getByRole("button", { name: "追加" }).nth(0).click();
+    await expect(page.getByTestId("app-toaster").getByText("追加しました")).toBeVisible();
     await expect(
       page.getByTestId("project-tasks-open").getByText(label, { exact: true }),
     ).toBeVisible();

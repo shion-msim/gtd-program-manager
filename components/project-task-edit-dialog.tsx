@@ -1,13 +1,11 @@
 "use client";
 
 import type { ComponentProps } from "react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  deleteProjectTask,
-  updateProjectTaskStay,
-} from "@/app/projects/[id]/actions";
-import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { updateProjectTaskStay } from "@/app/projects/[id]/actions";
+import { ProjectTaskDeleteConfirm } from "@/components/project-task-delete-confirm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -59,6 +57,7 @@ export function ProjectTaskEditDialog({
   triggerSize = "sm",
   triggerClassName,
 }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -76,7 +75,7 @@ export function ProjectTaskEditDialog({
           </Button>
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="token-dialog-content-layout">
         <DialogHeader>
           <DialogTitle>タスクを編集</DialogTitle>
           <DialogDescription>
@@ -98,6 +97,7 @@ export function ProjectTaskEditDialog({
               if (r.ok) {
                 toast.success("保存しました");
                 setOpen(false);
+                router.refresh();
               } else {
                 toast.error("保存できませんでした");
               }
@@ -123,8 +123,8 @@ export function ProjectTaskEditDialog({
               defaultValue={task.note ?? ""}
             />
           </div>
-          <div className="flex flex-wrap gap-4">
-            <div className="min-w-[10rem] flex-1 space-y-2">
+          <div className="token-form-row">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-due-${task.id}`}>〆切</Label>
               <Input
                 id={`pt-dlg-due-${task.id}`}
@@ -133,7 +133,7 @@ export function ProjectTaskEditDialog({
                 defaultValue={dueForInput(task.dueOn ?? undefined)}
               />
             </div>
-            <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-status-${task.id}`}>状態</Label>
               <NativeSelect
                 id={`pt-dlg-status-${task.id}`}
@@ -148,7 +148,7 @@ export function ProjectTaskEditDialog({
                 ))}
               </NativeSelect>
             </div>
-            <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-prio-${task.id}`}>優先度</Label>
               <NativeSelect
                 id={`pt-dlg-prio-${task.id}`}
@@ -175,13 +175,18 @@ export function ProjectTaskEditDialog({
             </div>
             <div className="border-t pt-3">
               <p className="text-muted-foreground mb-2 text-xs font-medium">危険な操作</p>
-              <ConfirmDeleteForm
-                action={deleteProjectTask.bind(null, task.id, projectId)}
+              <ProjectTaskDeleteConfirm
+                taskId={task.id}
+                projectId={projectId}
                 title="このタスクを削除しますか？"
                 description="削除すると元に戻せません。"
                 triggerLabel="削除"
                 confirmLabel="削除する"
                 triggerVariant="destructive"
+                onDeleted={() => {
+                  setOpen(false);
+                  router.refresh();
+                }}
               />
             </div>
           </DialogFooter>

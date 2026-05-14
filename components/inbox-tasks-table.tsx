@@ -1,8 +1,12 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { InboxTaskEditDialog } from "@/components/inbox-task-edit-dialog";
 import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
-import type { InboxReturnPath } from "@/lib/inbox-return-path";
 import {
   INBOX_EDITABLE_STATUSES,
   TASK_STATUS_LABELS,
@@ -10,6 +14,7 @@ import {
 import type { InboxOpenTaskRow } from "@/lib/inbox-tasks";
 import type { PriorityColorMap } from "@/lib/task-row-accent";
 import { priorityStripeColor, resolveTaskEntityAccent } from "@/lib/task-row-accent";
+import { accentEdgeClass } from "@/lib/design-tokens";
 import {
   completeInboxTask,
   moveInboxTaskToProject,
@@ -27,44 +32,99 @@ type MoveTarget = {
   projectName: string;
 };
 
+function InboxTaskMoveForm({
+  taskId,
+  moveTargets,
+}: {
+  taskId: string;
+  moveTargets: MoveTarget[];
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(async () => {
+          try {
+            const r = await moveInboxTaskToProject(taskId, fd);
+            if (!r.ok) {
+              toast.error("移動できませんでした");
+              return;
+            }
+            toast.success("移動しました");
+            router.refresh();
+          } catch {
+            toast.error("移動できませんでした");
+          }
+        });
+      }}
+    >
+      <NativeSelect
+        id={`move-${taskId}`}
+        name="targetProjectId"
+        required
+        disabled={pending}
+        data-testid="inbox-move-target"
+        defaultValue=""
+        className="token-move-target-min flex-1 text-sm"
+      >
+        <option value="">選択…</option>
+        {moveTargets.map((m) => (
+          <option key={m.projectId} value={m.projectId}>
+            {m.programName} / {m.projectName}
+          </option>
+        ))}
+      </NativeSelect>
+      <Button type="submit" size="sm" data-testid="inbox-move-submit" disabled={pending}>
+        {pending ? "移動中…" : "移動"}
+      </Button>
+    </form>
+  );
+}
+
 export function InboxTasksTable({
   rows,
   moveTargets,
-  returnPath,
   priorityColors,
 }: {
   rows: InboxOpenTaskRow[];
   moveTargets: MoveTarget[];
-  returnPath: InboxReturnPath;
   priorityColors: PriorityColorMap;
 }) {
+  const router = useRouter();
+  const [isCompleting, startComplete] = useTransition();
+
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm" data-testid="inbox-empty">
-        未整理のタスクはまだありません。受信箱の入力欄から追加できます。
+        未整理のタスクはまだありません。右下の＋または下の入力欄から追加できます。
       </p>
     );
   }
 
   return (
     <div className="overflow-x-auto rounded-lg border" data-testid="inbox-list">
-      <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
+      <table className="token-table-min w-full border-collapse text-left text-sm">
         <thead>
           <tr className="bg-muted/80 border-b text-xs font-medium tracking-wide text-muted-foreground">
             <th scope="col" className="w-0 p-0 font-medium" aria-label="色" />
             <th scope="col" className="px-3 py-2.5 font-medium">
               タイトル
             </th>
-            <th scope="col" className="w-[7.5rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-due px-3 py-2.5 font-medium">
               〆切
             </th>
-            <th scope="col" className="w-[10.5rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-status px-3 py-2.5 font-medium">
               状態
             </th>
-            <th scope="col" className="min-w-[14rem] px-3 py-2.5 font-medium">
+            <th scope="col" className="token-col-target px-3 py-2.5 font-medium">
               移動先
             </th>
-            <th scope="col" className="w-[11rem] px-3 py-2.5 text-right font-medium">
+            <th scope="col" className="token-col-action px-3 py-2.5 text-right font-medium">
               操作
             </th>
           </tr>
@@ -77,93 +137,78 @@ export function InboxTasksTable({
             );
             const pColor = priorityStripeColor(t.priority, priorityColors);
             return (
-            <tr key={t.id} className="align-middle" data-task-title={t.title}>
-              <td className="w-0 p-0 align-stretch">
-                <div className="flex h-full min-h-[2.75rem]" aria-hidden>
-                  <span
-                    className="w-1.5 self-stretch bg-muted-foreground/25"
-                    style={
-                      entityColor ? { backgroundColor: entityColor } : undefined
-                    }
-                  />
-                  {pColor ? (
+              <tr key={t.id} className="align-middle" data-task-title={t.title}>
+                <td className="w-0 p-0 align-stretch">
+                  <div className="flex h-full min-h-11" aria-hidden>
                     <span
-                      className="w-1 self-stretch"
-                      style={{ backgroundColor: pColor }}
+                      className={`w-1.5 self-stretch ${accentEdgeClass(entityColor)}`}
                     />
-                  ) : null}
-                </div>
-              </td>
-              <td className="max-w-[20rem] px-3 py-2">
-                <p className="font-medium leading-snug">{t.title}</p>
-              </td>
-              <td className="text-muted-foreground whitespace-nowrap px-3 py-2 text-xs">
-                {t.dueOn ? t.dueOn : "—"}
-              </td>
-              <td className="px-3 py-2">
-                <TaskStatusInlineForm
-                  action={updateInboxTaskStatus.bind(null, t.id)}
-                  defaultStatus={t.status}
-                  options={INBOX_STATUS_OPTIONS}
-                  selectId={`inbox-status-${t.id}`}
-                />
-              </td>
-              <td className="px-3 py-2">
-                {moveTargets.length > 0 ? (
-                  <form
-                    action={moveInboxTaskToProject.bind(null, t.id)}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <input type="hidden" name="returnPath" value={returnPath} />
-                    <NativeSelect
-                      id={`move-${t.id}`}
-                      name="targetProjectId"
-                      required
-                      data-testid="inbox-move-target"
-                      defaultValue=""
-                      className="min-w-[12rem] flex-1 text-sm"
-                    >
-                      <option value="">選択…</option>
-                      {moveTargets.map((m) => (
-                        <option key={m.projectId} value={m.projectId}>
-                          {m.programName} / {m.projectName}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      data-testid="inbox-move-submit"
-                    >
-                      移動
-                    </Button>
-                  </form>
-                ) : (
-                  <span className="text-muted-foreground text-xs">移動先なし</span>
-                )}
-              </td>
-              <td className="px-3 py-2">
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <InboxTaskEditDialog
-                    task={{
-                      id: t.id,
-                      title: t.title,
-                      note: t.note,
-                      dueOn: t.dueOn,
-                      status: t.status,
-                      priority: t.priority,
-                    }}
+                    {pColor ? (
+                      <span className={`w-1 self-stretch ${accentEdgeClass(pColor)}`} />
+                    ) : null}
+                  </div>
+                </td>
+                <td className="token-col-title-max px-3 py-2">
+                  <p className="font-medium leading-snug">{t.title}</p>
+                </td>
+                <td className="text-muted-foreground whitespace-nowrap px-3 py-2 text-xs">
+                  {t.dueOn ? t.dueOn : "—"}
+                </td>
+                <td className="px-3 py-2">
+                  <TaskStatusInlineForm
+                    key={`${t.id}-${t.status}`}
+                    action={updateInboxTaskStatus.bind(null, t.id)}
+                    defaultStatus={t.status}
+                    options={INBOX_STATUS_OPTIONS}
+                    selectId={`inbox-status-${t.id}`}
                   />
-                  <form action={completeInboxTask.bind(null, t.id)}>
-                    <input type="hidden" name="returnPath" value={returnPath} />
-                    <Button type="submit" size="sm" variant="outline">
+                </td>
+                <td className="px-3 py-2">
+                  {moveTargets.length > 0 ? (
+                    <InboxTaskMoveForm taskId={t.id} moveTargets={moveTargets} />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">移動先なし</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <InboxTaskEditDialog
+                      task={{
+                        id: t.id,
+                        title: t.title,
+                        note: t.note,
+                        dueOn: t.dueOn,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isCompleting}
+                      onClick={() => {
+                        startComplete(async () => {
+                          try {
+                            const r = await completeInboxTask(t.id);
+                            if (!r.ok) {
+                              toast.error("完了にできませんでした");
+                              return;
+                            }
+                            toast.success("完了にしました");
+                            router.refresh();
+                          } catch {
+                            toast.error("完了にできませんでした");
+                          }
+                        });
+                      }}
+                    >
                       完了
                     </Button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          );
+                  </div>
+                </td>
+              </tr>
+            );
           })}
         </tbody>
       </table>

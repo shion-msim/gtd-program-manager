@@ -1,6 +1,8 @@
 import { updatePriorityColors } from "@/app/settings/actions";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ACCENT_TOKENS } from "@/lib/design-tokens";
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 import type { PriorityColorMap } from "@/lib/task-row-accent";
 
@@ -16,18 +18,23 @@ export function SettingsPriorityColorsForm({
           <div key={p} className="flex flex-wrap items-center gap-3">
             <Label
               htmlFor={`prio-color-${p}`}
-              className="min-w-[4.5rem] text-sm font-medium"
+              className="token-label-min text-sm font-medium"
             >
               {TASK_PRIORITY_LABELS[p]}
             </Label>
-            <input
+            <NativeSelect
               id={`prio-color-${p}`}
               name={`priorityColor_${p}`}
-              type="color"
               defaultValue={colors[p]}
-              className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
               aria-label={`${TASK_PRIORITY_LABELS[p]}の色`}
-            />
+              className="token-form-select-min"
+            >
+              {ACCENT_TOKENS.map((token) => (
+                <option key={token} value={token}>
+                  {token}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
         ))}
       </div>

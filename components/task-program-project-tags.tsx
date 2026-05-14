@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { contrastForegroundForBackground, normalizeHexColor } from "@/lib/hex-color";
+import {
+  accentPillClass,
+  resolveAccentToken,
+  type AccentToken,
+} from "@/lib/design-tokens";
 import { isTaskPriority, TASK_PRIORITY_LABELS } from "@/lib/task-priority";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +15,7 @@ type Props = {
   programAccent: string | null;
   projectAccent: string | null;
   /** 未設定色は帯非表示に合わせ、ピルは muted 表示 */
-  priorityColor: string | null;
+  priorityColor: AccentToken | null;
   priority: string;
   className?: string;
 };
@@ -61,22 +65,14 @@ function Pill({
   href: string;
   accent: string | null;
 }) {
-  const bg = normalizeHexColor(accent ?? "");
+  const token = resolveAccentToken(accent);
   return (
     <Link
       href={href}
       className={cn(
-        "inline-block max-w-[12rem] truncate rounded-md px-1.5 py-0.5 text-xs font-medium no-underline transition-opacity hover:opacity-90",
-        !bg && "bg-muted text-muted-foreground",
+        "token-pill-max inline-block truncate rounded-md px-1.5 py-0.5 text-xs font-medium no-underline transition-opacity hover:opacity-90",
+        accentPillClass(token),
       )}
-      style={
-        bg
-          ? {
-              backgroundColor: bg,
-              color: contrastForegroundForBackground(bg),
-            }
-          : undefined
-      }
       title={name}
     >
       {name}
@@ -88,27 +84,18 @@ function PriorityPill({
   color,
   priority,
 }: {
-  color: string | null;
+  color: AccentToken | null;
   priority: string;
 }) {
   const label = isTaskPriority(priority)
     ? TASK_PRIORITY_LABELS[priority]
     : priority;
-  const bg = color ? normalizeHexColor(color) : null;
   return (
     <span
       className={cn(
-        "inline-block max-w-[8rem] truncate rounded-md px-1.5 py-0.5 text-xs font-medium",
-        !bg && "bg-muted text-muted-foreground",
+        "token-pill-priority-max inline-block truncate rounded-md px-1.5 py-0.5 text-xs font-medium",
+        accentPillClass(color),
       )}
-      style={
-        bg
-          ? {
-              backgroundColor: bg,
-              color: contrastForegroundForBackground(bg),
-            }
-          : undefined
-      }
       title={label}
     >
       {label}

@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 const BRAND_LOGO_IMG_CLASS =
-  "h-7 w-auto max-w-[min(11rem,100%)] object-contain object-left " +
-  "opacity-[0.98] " +
-  "[filter:contrast(1.05)_saturate(0.99)_drop-shadow(0_1px_1px_rgba(0,0,0,0.1))] " +
+  "h-7 w-auto max-w-44 object-contain object-left " +
+  "opacity-100 " +
+  "drop-shadow-sm " +
   "dark:opacity-100 " +
-  "dark:[filter:brightness(0)_invert(1)_contrast(1.05)_saturate(0.99)_drop-shadow(0_1px_2px_rgba(0,0,0,0.45))]";
+  "dark:brightness-0 dark:invert";
 
 export function BrandLogoLink({
   href,

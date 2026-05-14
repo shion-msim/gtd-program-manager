@@ -45,7 +45,13 @@ export async function getNonInboxProjectsForUser(userId: string) {
     })
     .from(projects)
     .innerJoin(programs, eq(projects.programId, programs.id))
-    .where(and(eq(projects.userId, userId), eq(projects.isInbox, false)))
+    .where(
+      and(
+        eq(projects.userId, userId),
+        eq(projects.isInbox, false),
+        eq(projects.isArchived, false),
+      ),
+    )
     .orderBy(
       asc(programs.navSortIndex),
       asc(programs.name),
