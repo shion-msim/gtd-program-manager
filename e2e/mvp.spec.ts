@@ -137,6 +137,7 @@ describeE2E("MVP E2E（E2E 認証＋DB。DATABASE_URL + AUTH_SECRET 必須）", 
     const label = `e2e-project-task-${Date.now()}`;
     await page.getByPlaceholder("次の行動として追加").fill(label);
     await page.getByRole("button", { name: "追加" }).nth(0).click();
+    await expect(page.getByTestId("app-toaster").getByText("追加しました")).toBeVisible();
     await expect(
       page.getByTestId("project-tasks-open").getByText(label, { exact: true }),
     ).toBeVisible();

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -19,10 +18,13 @@ async function projectForUser(projectId: string, userId: string) {
   return row ?? null;
 }
 
-export async function createProject(programId: string, formData: FormData) {
+export async function createProject(
+  programId: string,
+  formData: FormData,
+): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const userId = session.user.id;
   const [prog] = await db
@@ -31,12 +33,12 @@ export async function createProject(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)))
     .limit(1);
   if (!prog) {
-    return;
+    return { ok: false };
   }
   const nameRaw = formData.get("name");
   const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
   if (name === "") {
-    return;
+    return { ok: false };
   }
   const navSortIndex = await nextProjectNavSortIndexForProgram(programId);
   await db.insert(projects).values({
@@ -51,7 +53,7 @@ export async function createProject(programId: string, formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidateAppShell();
-  redirect(`/programs/${programId}?toast=created`);
+  return { ok: true };
 }
 
 export async function updateProject(
@@ -95,15 +97,14 @@ export async function updateProject(
   return { ok: true };
 }
 
-export async function deleteProject(projectId: string, formData: FormData) {
-  void formData;
+export async function deleteProject(projectId: string): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const existing = await projectForUser(projectId, session.user.id);
   if (!existing || existing.isInbox) {
-    return;
+    return { ok: false };
   }
   const programId = existing.programId;
   await db.delete(projects).where(eq(projects.id, projectId));
@@ -113,5 +114,5 @@ export async function deleteProject(projectId: string, formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/workload");
   revalidateAppShell();
-  redirect("/programs?toast=deleted");
+  return { ok: true };
 }

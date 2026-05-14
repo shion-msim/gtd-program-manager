@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
@@ -106,11 +105,10 @@ export async function updateProgram(
   return { ok: true };
 }
 
-export async function deleteProgram(programId: string, formData: FormData) {
-  void formData;
+export async function deleteProgram(programId: string): Promise<{ ok: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
-    return;
+    return { ok: false };
   }
   const userId = session.user.id;
   const [existing] = await db
@@ -119,19 +117,19 @@ export async function deleteProgram(programId: string, formData: FormData) {
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)))
     .limit(1);
   if (!existing) {
-    return;
+    return { ok: false };
   }
   const [{ n }] = await db
     .select({ n: count() })
     .from(projects)
     .where(eq(projects.programId, programId));
   if (n > 0) {
-    return;
+    return { ok: false };
   }
   await db
     .delete(programs)
     .where(and(eq(programs.id, programId), eq(programs.userId, userId)));
   revalidatePath("/programs");
   revalidateAppShell();
-  redirect("/programs?toast=deleted");
+  return { ok: true };
 }

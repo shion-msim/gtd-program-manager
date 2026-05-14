@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
 import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
+import { ProjectTaskMoveRow } from "@/components/project-task-move-row";
+import { ProjectTaskQuickAdd } from "@/components/project-task-quick-add";
 import { TaskStatusInlineForm } from "@/components/task-status-inline-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { db } from "@/db";
 import { programs, projects, tasks } from "@/db/schema";
 import { getOtherProjectsForMove } from "@/lib/project-move-targets";
@@ -11,11 +11,8 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
-  addProjectTask,
-  moveProjectTask,
   updateProjectTaskStatus,
 } from "./actions";
-import { NativeSelect } from "@/components/ui/native-select";
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import {
@@ -101,23 +98,7 @@ export default async function ProjectTasksPage({ params }: Props) {
       {!ctx.project.isArchived ? (
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="text-sm font-medium">タスクを追加</h2>
-        <form action={addProjectTask.bind(null, projectId)} className="flex flex-wrap items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <label htmlFor="new-task-title" className="sr-only">
-              タイトル
-            </label>
-            <Input
-              id="new-task-title"
-              name="title"
-              type="text"
-              required
-              placeholder="次の行動として追加"
-            />
-          </div>
-          <Button type="submit" size="sm">
-            追加
-          </Button>
-        </form>
+        <ProjectTaskQuickAdd projectId={projectId} />
         <p className="text-muted-foreground text-xs">
           既定の状態は「次の行動」です。追加後、一覧の状態または「編集」で更新できます。
         </p>
@@ -176,33 +157,11 @@ export default async function ProjectTasksPage({ params }: Props) {
                     }}
                   />
                   {moveTargets.length > 0 ? (
-                    <form
-                      action={moveProjectTask.bind(null, t.id, projectId)}
-                      className="flex flex-wrap items-end gap-2"
-                    >
-                      <div className="token-move-target-min flex-1">
-                        <label htmlFor={`pt-move-${t.id}`} className="sr-only">
-                          移動先
-                        </label>
-                        <NativeSelect
-                          id={`pt-move-${t.id}`}
-                          name="targetProjectId"
-                          required
-                          data-testid="project-move-target"
-                          defaultValue=""
-                        >
-                          <option value="">移動先を選択…</option>
-                          {moveTargets.map((m) => (
-                            <option key={m.projectId} value={m.projectId}>
-                              {m.programName} / {m.projectName}
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </div>
-                      <Button type="submit" size="sm" data-testid="project-move-submit">
-                        移動
-                      </Button>
-                    </form>
+                    <ProjectTaskMoveRow
+                      taskId={t.id}
+                      fromProjectId={projectId}
+                      moveTargets={moveTargets}
+                    />
                   ) : null}
                 </div>
                 </div>
