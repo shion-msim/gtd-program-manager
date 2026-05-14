@@ -20,12 +20,11 @@ export function CaptureNowFabHost() {
   const searchParams = useSearchParams();
   const navKey = `${pathname}?${searchParams.toString()}`;
 
-  return <CaptureNowFabInner key={navKey} pathname={pathname} />;
+  return <CaptureNowFabInner key={navKey} />;
 }
 
-function CaptureNowFabInner({ pathname }: { pathname: string }) {
+function CaptureNowFabInner() {
   const [open, setOpen] = React.useState(false);
-  const returnPath = pathname.startsWith("/") ? pathname : "/inbox/table";
 
   return (
     <>
@@ -53,7 +52,7 @@ function CaptureNowFabInner({ pathname }: { pathname: string }) {
               頭の中を空にするための一行キャプチャです。
             </DialogDescription>
           </DialogHeader>
-          <InboxQuickAdd returnPath={returnPath} />
+          <InboxQuickAdd onAdded={() => setOpen(false)} />
         </DialogContent>
       </Dialog>
     </>
