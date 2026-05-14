@@ -46,8 +46,8 @@ export default async function InboxTaskEditPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <p className="text-muted-foreground text-sm">
-        <Link href="/inbox" className="text-foreground underline underline-offset-4">
-          受信箱へ戻る
+        <Link href="/inbox/table" className="text-foreground underline underline-offset-4">
+          受信箱（整理ビュー）へ戻る
         </Link>
       </p>
       <header>
@@ -64,7 +64,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
         </CardHeader>
         <CardContent className="space-y-6">
           <form action={updateInboxTask.bind(null, taskId)} className="space-y-4">
-            <input type="hidden" name="returnPath" value="/inbox" />
+            <input type="hidden" name="returnPath" value="/inbox/table" />
             <div className="space-y-2">
               <Label htmlFor="title">タイトル</Label>
               <Input
@@ -84,8 +84,8 @@ export default async function InboxTaskEditPage({ params }: Props) {
                 defaultValue={task.note ?? ""}
               />
             </div>
-            <div className="flex flex-wrap gap-4">
-              <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-row">
+              <div className="token-form-field-col">
                 <Label htmlFor="dueOn">〆切</Label>
                 <Input
                   id="dueOn"
@@ -94,7 +94,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
                   defaultValue={dueForInput(task.dueOn ?? undefined)}
                 />
               </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
+              <div className="token-form-field-col">
                 <Label htmlFor="status">状態</Label>
                 <NativeSelect
                   id="status"
@@ -109,7 +109,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
                   ))}
                 </NativeSelect>
               </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
+              <div className="token-form-field-col">
                 <Label htmlFor="priority">優先度</Label>
                 <NativeSelect
                   id="priority"
@@ -130,7 +130,7 @@ export default async function InboxTaskEditPage({ params }: Props) {
                 保存
               </Button>
               <Link
-                href="/inbox"
+                href="/inbox/table"
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
                 キャンセル

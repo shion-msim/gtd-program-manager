@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { ACCENT_TOKENS, resolveAccentToken } from "@/lib/design-tokens";
 
 function formatDateForInput(v: string | null | undefined): string {
   if (!v) {
@@ -67,7 +69,7 @@ export function ProgramEditDialog({
           </Button>
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="token-dialog-content-layout">
         <DialogHeader>
           <DialogTitle>プログラムを編集</DialogTitle>
           <DialogDescription>名前と期間を更新します。</DialogDescription>
@@ -101,22 +103,27 @@ export function ProgramEditDialog({
           <div className="space-y-2">
             <Label htmlFor={`dlg-program-accent-${program.id}`}>カード左端の色</Label>
             <div className="flex flex-wrap items-center gap-3">
-              <input
+              <NativeSelect
                 id={`dlg-program-accent-${program.id}`}
                 name="accentColor"
-                type="color"
-                defaultValue={program.accentColor ?? "#94a3b8"}
-                className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
+                defaultValue={resolveAccentToken(program.accentColor) ?? "slate"}
+                className="token-form-select-min"
                 aria-label="アクセント色"
-              />
+              >
+                {ACCENT_TOKENS.map((token) => (
+                  <option key={token} value={token}>
+                    {token}
+                  </option>
+                ))}
+              </NativeSelect>
               <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
                 <input type="checkbox" name="clearAccent" className="size-4 rounded border" />
                 色を使わない
               </label>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="min-w-[10rem] flex-1 space-y-2">
+          <div className="token-form-row">
+            <div className="token-form-field-col">
               <Label htmlFor={`dlg-program-start-${program.id}`}>開始日</Label>
               <Input
                 id={`dlg-program-start-${program.id}`}
@@ -125,7 +132,7 @@ export function ProgramEditDialog({
                 defaultValue={formatDateForInput(program.startOn ?? undefined)}
               />
             </div>
-            <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-field-col">
               <Label htmlFor={`dlg-program-end-${program.id}`}>終了日</Label>
               <Input
                 id={`dlg-program-end-${program.id}`}

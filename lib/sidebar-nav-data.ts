@@ -52,6 +52,7 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
         name: projects.name,
         programId: projects.programId,
         isInbox: projects.isInbox,
+        isArchived: projects.isArchived,
         navSortIndex: projects.navSortIndex,
       })
       .from(projects)
@@ -116,6 +117,9 @@ export async function getSidebarNavData(userId: string): Promise<SidebarNavData>
   for (const pr of projRows) {
     const prog = byProgram.get(pr.programId);
     if (!prog) continue;
+    if (pr.isArchived && !pr.isInbox) {
+      continue;
+    }
     if (pr.isInbox) prog.isInboxProgram = true;
     const openTaskCount = countMap.get(pr.id) ?? 0;
     const href = pr.isInbox ? "/inbox" : `/projects/${pr.id}`;

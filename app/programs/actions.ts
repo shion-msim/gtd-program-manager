@@ -6,7 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { programs, projects } from "@/db/schema";
-import { parseOptionalHexColor } from "@/lib/hex-color";
+import { parseOptionalAccentToken } from "@/lib/design-tokens";
 import { nextProgramNavSortIndex } from "@/lib/nav-sort-keys";
 import { revalidateAppShell } from "@/lib/revalidate-app-shell";
 
@@ -38,7 +38,7 @@ export async function createProgram(
   const clearAccent = formData.get("clearAccent") === "on";
   const accentColor = clearAccent
     ? null
-    : parseOptionalHexColor(formData.get("accentColor"));
+    : parseOptionalAccentToken(formData.get("accentColor"));
   const navSortIndex = await nextProgramNavSortIndex(session.user.id);
   const [row] = await db
     .insert(programs)
@@ -86,7 +86,7 @@ export async function updateProgram(
   const clearAccent = formData.get("clearAccent") === "on";
   const accentColor = clearAccent
     ? null
-    : parseOptionalHexColor(formData.get("accentColor"));
+    : parseOptionalAccentToken(formData.get("accentColor"));
   await db
     .update(programs)
     .set({

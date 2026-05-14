@@ -5,12 +5,12 @@ import { ProjectTaskEditDialog } from "@/components/project-task-edit-dialog";
 import { TaskProgramProjectTags } from "@/components/task-program-project-tags";
 import { buttonVariants } from "@/components/ui/button";
 import { getDefaultTimeZone, getSummaryForUser } from "@/lib/dashboard-data";
-import { normalizeHexColor } from "@/lib/hex-color";
 import { getPriorityColorsForUser } from "@/lib/user-priority-colors";
 import { priorityStripeColor } from "@/lib/task-row-accent";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { resolveAccentToken } from "@/lib/design-tokens";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -227,9 +227,7 @@ export default async function DashboardPage() {
               <li key={p.id} className="min-w-0">
                 <ListRowEdgeAccent
                   as="div"
-                  entityColor={
-                    p.accentColor ? normalizeHexColor(p.accentColor) : null
-                  }
+                  entityColor={resolveAccentToken(p.accentColor)}
                   priorityColor={null}
                 >
                   <div className="py-0.5">

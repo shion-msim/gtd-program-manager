@@ -76,7 +76,7 @@ export function ProjectTaskEditDialog({
           </Button>
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="token-dialog-content-layout">
         <DialogHeader>
           <DialogTitle>タスクを編集</DialogTitle>
           <DialogDescription>
@@ -123,8 +123,8 @@ export function ProjectTaskEditDialog({
               defaultValue={task.note ?? ""}
             />
           </div>
-          <div className="flex flex-wrap gap-4">
-            <div className="min-w-[10rem] flex-1 space-y-2">
+          <div className="token-form-row">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-due-${task.id}`}>〆切</Label>
               <Input
                 id={`pt-dlg-due-${task.id}`}
@@ -133,7 +133,7 @@ export function ProjectTaskEditDialog({
                 defaultValue={dueForInput(task.dueOn ?? undefined)}
               />
             </div>
-            <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-status-${task.id}`}>状態</Label>
               <NativeSelect
                 id={`pt-dlg-status-${task.id}`}
@@ -148,7 +148,7 @@ export function ProjectTaskEditDialog({
                 ))}
               </NativeSelect>
             </div>
-            <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-field-col">
               <Label htmlFor={`pt-dlg-prio-${task.id}`}>優先度</Label>
               <NativeSelect
                 id={`pt-dlg-prio-${task.id}`}

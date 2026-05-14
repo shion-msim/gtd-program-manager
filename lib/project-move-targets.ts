@@ -24,7 +24,11 @@ export async function getOtherProjectsForMove(
     .from(projects)
     .innerJoin(programs, eq(projects.programId, programs.id))
     .where(
-      and(eq(projects.userId, userId), ne(projects.id, excludeProjectId)),
+      and(
+        eq(projects.userId, userId),
+        ne(projects.id, excludeProjectId),
+        eq(projects.isArchived, false),
+      ),
     )
     .orderBy(
       desc(projects.isInbox),

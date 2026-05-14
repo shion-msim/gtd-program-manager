@@ -44,6 +44,7 @@ export async function getWorkloadForUser(
     .where(
       and(
         eq(projects.userId, userId),
+        eq(projects.isArchived, false),
         ne(tasks.status, "done"),
         sql`${tasks.dueOn} is not null`,
       ),
@@ -72,6 +73,7 @@ export async function getWorkloadForUser(
     .where(
       and(
         eq(projects.userId, userId),
+        eq(projects.isArchived, false),
         ne(tasks.status, "done"),
         sql`${tasks.dueOn} is null`,
       ),
@@ -231,6 +233,7 @@ export async function getSummaryForUser(
     .where(
       and(
         eq(projects.userId, userId),
+        eq(projects.isArchived, false),
         eq(tasks.dueOn, todayYmd),
         ne(tasks.status, "done"),
       ),
@@ -251,7 +254,11 @@ export async function getSummaryForUser(
     .innerJoin(projects, eq(tasks.projectId, projects.id))
     .innerJoin(programs, eq(projects.programId, programs.id))
     .where(
-      and(eq(projects.userId, userId), eq(tasks.status, "next")),
+      and(
+        eq(projects.userId, userId),
+        eq(projects.isArchived, false),
+        eq(tasks.status, "next"),
+      ),
     )
     .orderBy(
       asc(
@@ -273,6 +280,7 @@ export async function getSummaryForUser(
     .where(
       and(
         eq(projects.userId, userId),
+        eq(projects.isArchived, false),
         ne(tasks.status, "done"),
         sql`${tasks.dueOn} is not null`,
         gte(tasks.dueOn, todayYmd),

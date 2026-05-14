@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { userAppSettings } from "@/db/schema";
-import { normalizeHexColor } from "@/lib/hex-color";
+import { isAccentToken } from "@/lib/design-tokens";
 import type { PriorityColorMap } from "@/lib/task-row-accent";
 import {
-  DEFAULT_PRIORITY_COLORS,
+  DEFAULT_PRIORITY_TOKENS,
   TASK_PRIORITIES,
 } from "@/lib/task-priority";
 
@@ -17,17 +17,16 @@ export async function updatePriorityColors(formData: FormData): Promise<void> {
     return;
   }
   const userId = session.user.id;
-  const payload: PriorityColorMap = { ...DEFAULT_PRIORITY_COLORS };
+  const payload: PriorityColorMap = { ...DEFAULT_PRIORITY_TOKENS };
   for (const p of TASK_PRIORITIES) {
     const raw = formData.get(`priorityColor_${p}`);
     if (typeof raw !== "string") {
       return;
     }
-    const n = normalizeHexColor(raw);
-    if (!n) {
+    if (!isAccentToken(raw)) {
       return;
     }
-    payload[p] = n;
+    payload[p] = raw;
   }
   const json = JSON.stringify(payload);
   await db

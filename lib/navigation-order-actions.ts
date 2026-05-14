@@ -99,11 +99,17 @@ export async function reorderProjectsInProgram(
   }
 
   const rows = await db
-    .select({ id: projects.id, isInbox: projects.isInbox })
+    .select({
+      id: projects.id,
+      isInbox: projects.isInbox,
+      isArchived: projects.isArchived,
+    })
     .from(projects)
     .where(and(eq(projects.programId, programId), eq(projects.userId, userId)));
 
-  const nonInboxIds = rows.filter((r) => !r.isInbox).map((r) => r.id);
+  const nonInboxIds = rows
+    .filter((r) => !r.isInbox && !r.isArchived)
+    .map((r) => r.id);
   const inboxRows = rows.filter((r) => r.isInbox);
   const inboxProjId =
     inboxRows.length > 0 && inboxRows[0] ? inboxRows[0].id : null;

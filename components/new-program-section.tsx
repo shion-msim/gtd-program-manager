@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { ACCENT_TOKENS } from "@/lib/design-tokens";
 
 export function NewProgramSection() {
   const router = useRouter();
@@ -66,7 +68,7 @@ export function NewProgramSection() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="token-dialog-content-layout">
           <DialogHeader>
             <DialogTitle>新規プログラム</DialogTitle>
             <DialogDescription>名前と期間を指定して作成します。</DialogDescription>
@@ -102,12 +104,12 @@ export function NewProgramSection() {
                 onChange={(e) => setDraftName(e.target.value)}
               />
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="min-w-[10rem] flex-1 space-y-2">
+            <div className="token-form-row">
+              <div className="token-form-field-col">
                 <Label htmlFor="new-program-dialog-start">開始日</Label>
                 <Input id="new-program-dialog-start" name="startOn" type="date" />
               </div>
-              <div className="min-w-[10rem] flex-1 space-y-2">
+              <div className="token-form-field-col">
                 <Label htmlFor="new-program-dialog-end">終了日</Label>
                 <Input id="new-program-dialog-end" name="endOn" type="date" />
               </div>
@@ -115,14 +117,19 @@ export function NewProgramSection() {
             <div className="space-y-2">
               <Label htmlFor="new-program-dialog-accent">カード左端の色（任意）</Label>
               <div className="flex flex-wrap items-center gap-3">
-                <input
+                <NativeSelect
                   id="new-program-dialog-accent"
                   name="accentColor"
-                  type="color"
-                  defaultValue="#94a3b8"
-                  className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
+                  defaultValue="slate"
+                  className="token-form-select-min"
                   aria-label="アクセント色"
-                />
+                >
+                  {ACCENT_TOKENS.map((token) => (
+                    <option key={token} value={token}>
+                      {token}
+                    </option>
+                  ))}
+                </NativeSelect>
                 <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
                   <input type="checkbox" name="clearAccent" className="size-4 rounded border" />
                   色を使わない

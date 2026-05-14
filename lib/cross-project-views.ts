@@ -6,6 +6,7 @@ export type ProjectListRow = {
   projectId: string;
   projectName: string;
   isInbox: boolean;
+  isArchived: boolean;
   programId: string;
   programName: string;
   projectAccent: string | null;
@@ -20,6 +21,7 @@ export async function getProjectsListRowsForUser(
       projectId: projects.id,
       projectName: projects.name,
       isInbox: projects.isInbox,
+      isArchived: projects.isArchived,
       programId: programs.id,
       programName: programs.name,
       projectAccent: projects.accentColor,
@@ -73,7 +75,13 @@ export async function getOpenTasksListRowsForUser(
     .from(tasks)
     .innerJoin(projects, eq(tasks.projectId, projects.id))
     .innerJoin(programs, eq(projects.programId, programs.id))
-    .where(and(eq(projects.userId, userId), ne(tasks.status, "done")))
+    .where(
+      and(
+        eq(projects.userId, userId),
+        ne(tasks.status, "done"),
+        eq(projects.isArchived, false),
+      ),
+    )
     .orderBy(desc(tasks.updatedAt))
     .limit(limit);
 }

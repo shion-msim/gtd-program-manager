@@ -16,11 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { ACCENT_TOKENS, resolveAccentToken } from "@/lib/design-tokens";
 
 export type ProjectEditFields = {
   id: string;
   name: string;
   accentColor: string | null;
+  isArchived: boolean;
 };
 
 export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
@@ -36,10 +39,10 @@ export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
           </Button>
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="token-dialog-content-layout">
         <DialogHeader>
           <DialogTitle>プロジェクトを編集</DialogTitle>
-          <DialogDescription>プロジェクト名を更新します。</DialogDescription>
+          <DialogDescription>名前・色・アーカイブ状態を更新します。</DialogDescription>
         </DialogHeader>
         <form
           className="space-y-3"
@@ -70,19 +73,35 @@ export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
           <div className="space-y-2">
             <Label htmlFor={`dlg-project-accent-${project.id}`}>カード左端の色</Label>
             <div className="flex flex-wrap items-center gap-3">
-              <input
+              <NativeSelect
                 id={`dlg-project-accent-${project.id}`}
                 name="accentColor"
-                type="color"
-                defaultValue={project.accentColor ?? "#94a3b8"}
-                className="border-input bg-background h-9 w-14 cursor-pointer rounded-md border p-0.5"
+                defaultValue={resolveAccentToken(project.accentColor) ?? "slate"}
+                className="token-form-select-min"
                 aria-label="アクセント色"
-              />
+              >
+                {ACCENT_TOKENS.map((token) => (
+                  <option key={token} value={token}>
+                    {token}
+                  </option>
+                ))}
+              </NativeSelect>
               <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
                 <input type="checkbox" name="clearAccent" className="size-4 rounded border" />
                 色を使わない
               </label>
             </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="isArchived"
+                defaultChecked={project.isArchived}
+                className="size-4 rounded border"
+              />
+              アーカイブする（サイドバーと並べ替え対象から外します。タスクは残ります）
+            </label>
           </div>
           <DialogFooter className="pt-2">
             <DialogClose render={<Button type="button" variant="outline" size="sm" />}>

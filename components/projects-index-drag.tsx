@@ -20,12 +20,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { ProjectListRow } from "@/lib/cross-project-views";
 
 import { ListRowEdgeAccent } from "@/components/list-row-edge-accent";
 import { reorderProjectsInProgram } from "@/lib/navigation-order-actions";
 import { resolveTaskEntityAccent } from "@/lib/task-row-accent";
+import { useIsClient } from "@/lib/use-is-client";
 import { cn } from "@/lib/utils";
 
 function FrozenIndexProjectRow({
@@ -37,7 +39,7 @@ function FrozenIndexProjectRow({
   gripPlaceholder?: boolean;
 }) {
   const href = row.isInbox ? "/inbox" : `/projects/${row.projectId}`;
-  const suffix = row.isInbox ? "（受信箱）" : null;
+  const suffix = row.isInbox ? "（受信箱）" : row.isArchived ? "（アーカイブ）" : null;
 
   const body = (
     <ListRowEdgeAccent
@@ -136,22 +138,16 @@ function SortableIndexProjectRow({ row }: { row: ProjectListRow }) {
   );
 }
 
-function ProgramSection({
+function ProgramSectionDndInner({
   sec,
+  sortablesFromProp,
 }: {
   sec: { programId: string; programName: string; items: ProjectListRow[] };
+  sortablesFromProp: ProjectListRow[];
 }) {
   const router = useRouter();
-  const [dndReady, setDndReady] = useState(false);
-  useEffect(() => {
-    setDndReady(true);
-  }, []);
-
-  const inboxRow = sec.items.find((r) => r.isInbox);
-  const sortables = inboxRow
-    ? sec.items.filter((r) => !r.isInbox)
-    : sec.items;
-  const draggableIds = sortables.map((r) => r.projectId);
+  const [orderedRows, setOrderedRows] = useState(sortablesFromProp);
+  const draggableIds = orderedRows.map((r) => r.projectId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -160,7 +156,7 @@ function ProgramSection({
     }),
   );
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) {
       return;
@@ -170,10 +166,61 @@ function ProgramSection({
     if (oldIndex < 0 || newIndex < 0) {
       return;
     }
-    const nextOrder = arrayMove(draggableIds, oldIndex, newIndex);
-    await reorderProjectsInProgram(sec.programId, nextOrder);
-    router.refresh();
+    const prev = orderedRows;
+    const nextRows = arrayMove(orderedRows, oldIndex, newIndex);
+    setOrderedRows(nextRows);
+    const nextOrder = nextRows.map((r) => r.projectId);
+    void (async () => {
+      try {
+        const r = await reorderProjectsInProgram(sec.programId, nextOrder);
+        if (!r.ok) {
+          setOrderedRows(prev);
+          toast.error("並べ替えを保存できませんでした");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setOrderedRows(prev);
+        toast.error("並べ替えを保存できませんでした");
+      }
+    })();
   }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={draggableIds} strategy={verticalListSortingStrategy}>
+        <>
+          {orderedRows.map((row) => (
+            <SortableIndexProjectRow key={row.projectId} row={row} />
+          ))}
+        </>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function ProgramSection({
+  sec,
+}: {
+  sec: { programId: string; programName: string; items: ProjectListRow[] };
+}) {
+  const dndReady = useIsClient();
+
+  const archivedRows = useMemo(
+    () => sec.items.filter((r) => !r.isInbox && r.isArchived),
+    [sec.items],
+  );
+  const inboxRow = useMemo(() => {
+    const visibleItems = sec.items.filter((r) => !r.isArchived);
+    return visibleItems.find((r) => r.isInbox);
+  }, [sec.items]);
+
+  const sortablesFromProp = useMemo(() => {
+    const visibleItems = sec.items.filter((r) => !r.isArchived);
+    return inboxRow ? visibleItems.filter((r) => !r.isInbox) : visibleItems;
+  }, [sec.items, inboxRow]);
+
+  const serverOrderKey = sortablesFromProp.map((r) => r.projectId).join("|");
 
   return (
     <section className="space-y-2">
@@ -190,17 +237,13 @@ function ProgramSection({
           <FrozenIndexProjectRow key={inboxRow.projectId} row={inboxRow} />
         ) : null}
         {dndReady ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={draggableIds} strategy={verticalListSortingStrategy}>
-              <>
-                {sortables.map((row) => (
-                  <SortableIndexProjectRow key={row.projectId} row={row} />
-                ))}
-              </>
-            </SortableContext>
-          </DndContext>
+          <ProgramSectionDndInner
+            key={serverOrderKey}
+            sec={sec}
+            sortablesFromProp={sortablesFromProp}
+          />
         ) : (
-          sortables.map((row) => (
+          sortablesFromProp.map((row) => (
             <FrozenIndexProjectRow
               key={row.projectId}
               row={row}
@@ -209,6 +252,16 @@ function ProgramSection({
           ))
         )}
       </ul>
+      {archivedRows.length > 0 ? (
+        <div className="mt-2 space-y-1">
+          <p className="text-muted-foreground text-xs font-medium">アーカイブ済み</p>
+          <ul className="divide-border divide-y overflow-hidden rounded-lg border text-sm opacity-90">
+            {archivedRows.map((row) => (
+              <FrozenIndexProjectRow key={row.projectId} row={row} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
