@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateProject } from "@/app/programs/[id]/actions";
@@ -27,6 +28,7 @@ export type ProjectEditFields = {
 };
 
 export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -53,6 +55,7 @@ export function ProjectEditDialog({ project }: { project: ProjectEditFields }) {
               const r = await updateProject(project.id, fd);
               if (r.ok) {
                 toast.success("保存しました");
+                router.refresh();
                 setOpen(false);
               } else {
                 toast.error("保存できませんでした");

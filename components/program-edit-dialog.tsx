@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateProgram } from "@/app/programs/actions";
@@ -43,6 +44,7 @@ export function ProgramEditDialog({
   /** 受信箱プログラムなど編集不可のとき true */
   disabled?: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -83,6 +85,7 @@ export function ProgramEditDialog({
               const r = await updateProgram(program.id, fd);
               if (r.ok) {
                 toast.success("保存しました");
+                router.refresh();
                 setOpen(false);
               } else {
                 toast.error("保存できませんでした");
